@@ -1,0 +1,98 @@
+---
+title: "Project Title"
+author: "Tiffany Tang"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+runtime: shiny
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
+library(R.utils)
+library(Hmisc)
+library(ggpubr)
+library(shiny)
+library(shinyWidgets)
+library(knitr)
+library(DT)
+
+setwd("..")
+sourceDirectory(path = ".", pattern = ".R$", recursive = F, modifiedOnly = F)
+setwd("rmd_templates")
+
+options(knitr.kable.NA = 'NA', 
+        dplyr.summarise.inform = FALSE)
+
+```
+
+```{r}
+
+inputPanel(
+  pickerInput("results_folder", label = "Results Folder",
+              choices = list.dirs(path = file.path("results"), 
+                                  full.names = F, recursive = F)),
+              
+  pickerInput("subfolder", label = "Subfolder",
+              choices = NULL),
+  
+  pickerInput("methods", label = "Methods",
+              choices = c("Lasso", "RF", "XGB"),
+              multiple = TRUE,
+              selected = c("Lasso", "RF", "XGB"),
+              options = list(
+                `actions-box` = TRUE,
+                `deselect-all-text` = "None",
+                `select-all-text` = "Select all"
+              )),
+  
+  prettyRadioButtons("metric", label = "Metric",
+                     choices = c("AUC", "ORR"),
+                     shape = "round", animation = "jelly", icon = icon("check"))
+)
+
+observe({
+  updatePickerInput(session, "subfolder",
+                    choices = list.dirs(file.path("results",
+                                                  input$results_folder),
+                                        full.names = F, recursive = F))
+})
+
+resultsPath <- reactive({
+  file.path("results", input$results_folder, input$subfolder)
+})
+
+resultsData <- reactive({
+  out_path <- resultsPath()
+  out_file <- "test_errors.rds"
+  req(file.exists(file.path(out_path, out_file)))
+  res_df <- readRDS(file.path(out_path, out_file))
+  list(res_df = res_df)
+})
+
+resultsClean <- reactive({
+  data <- resultsData()
+  res_df <- data$res_df %>%
+    filter(Method %in% input$methods, Metric == input$metric)
+  list(res_df = res_df)
+})
+
+renderPlot({
+  
+  data <- resultsClean()
+  res_df <- data$res_df
+  
+  # make plot from res_df
+  plt <- ggplot(res_df)
+  
+  out_path <- file.path(resultsPath(), 
+                        paste0("final_test_", input$metric, "_plot.rds"))
+  if (!file.exists(out_path)) {
+    saveRDS(plt, out_path)
+  }
+  
+  plt
+})
+
+```
+

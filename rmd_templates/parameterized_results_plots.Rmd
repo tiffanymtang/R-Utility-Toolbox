@@ -1,0 +1,158 @@
+---
+title: "Project Title"
+author: "Tiffany Tang"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+# bibliography: bibliography.bib
+header-includes:
+    - \usepackage{float}
+    - \usepackage{amsmath}
+    - \usepackage{gensymb}
+output:
+  rmdformats::material:
+    fig_caption: true
+    # code_folding: hide
+    # use_bookdown: true
+css: custom_rmd_theme.css
+params:
+  folder_name: 
+    label: "Simulation Folder Name:"
+    value: "sim_name"
+---
+
+
+This is a parameterized Rmarkdown template for automatically generating a report with all simulation result plots from the specified folder.
+  
+
+
+```{r setup, include=FALSE}
+options(width = 10000)
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  cache = FALSE,
+  fig.align = "center",
+  fig.pos = "H",
+  # fig.show = "hold",
+  fig.height = 12,
+  fig.width = 10
+)
+
+library(tidyverse)
+library(R.utils)
+library(kableExtra)
+library(knitr)
+library(DT)
+
+setwd("..")
+sourceDirectory(path = ".", pattern = ".R$", recursive = F, modifiedOnly = F)
+setwd("rmd_templates")
+
+options(knitr.kable.NA = 'NA', 
+        dplyr.summarise.inform = FALSE)
+
+```
+
+
+# Simulation Setup {.tabset .tabset-pills .tabset-fade}
+
+## Simulation Models {.tabset .tabset-pills .tabset-fade}
+
+### Simulation 1
+
+### Simulation 2 
+
+
+## Methods
+
+## Evaluation
+
+#### **Prediction Error**
+
+#### **Support Recovery Error**
+
+
+```{r make-plots, results = "asis"}
+
+header_template <- "
+
+# %s {.tabset .tabset-pills .tabset-fade}
+
+"
+
+section_template <- "
+
+## %s {.tabset}
+
+"
+
+subsection_template <- "
+
+### %s {.tabset}
+
+"
+
+subsubsection_template <- "
+
+#### %s {.tabset}
+
+"
+
+pred_header <- "<h3>**Prediction Accuracy**</h3>"
+supp_header <- "<h3>**Support Recovery (Oracle)**</h3>"
+
+width <- 12
+plt_idx <- 1
+
+sim_dirs <- list.dirs(path = params$folder_name, recursive = F, full.names = F)
+
+cat(sprintf(header_template, params$folder_name))
+
+for (sim_dir in sim_dirs) {
+  message(sim_dir)
+  
+  cat(sprintf(section_template, sim_dir))
+  
+  cat(sprintf(subsection_template, "Main Plots"))
+  message("Main Plots")
+  
+  pred_plt_path <- file.path(params$folder_name, sim_dir, "pred_plt.rds")
+  if (file.exists(pred_plt_path)) {
+    cat(pred_header)
+    plt <- readRDS(pred_plt_path)
+    subchunkify(plt, plt_idx, 8, width)
+      plt_idx <- plt_idx + 1
+  }
+  
+  supp_plt_path <- file.path(params$folder_name, sim_dir, "supp_plt.rds")
+  if (file.exists(supp_plt_path)) {
+    cat(supp_header)
+    plt <- readRDS(supp_plt_path)
+    subchunkify(plt, plt_idx, 8, width)
+      plt_idx <- plt_idx + 1
+  }
+  
+  cat(sprintf(subsection_template, "Supplementary Plots"))
+  message("Supplementary Plots")
+  
+  pred_plt_path <- file.path(params$folder_name, sim_dir, "pred_plt2.rds")
+  if (file.exists(pred_plt_path)) {
+    cat(pred_header)
+    plt <- readRDS(pred_plt_path)
+    subchunkify(plt, plt_idx, 8, width)
+      plt_idx <- plt_idx + 1
+  }
+  
+  supp_plt_path <- file.path(params$folder_name, sim_dir, "supp_plt2.rds")
+  if (file.exists(supp_plt_path)) {
+    cat(supp_header)
+    plt <- readRDS(supp_plt_path)
+    subchunkify(plt, plt_idx, 8, width)
+      plt_idx <- plt_idx + 1
+  }
+}
+
+```
+
+
+<!-- # Bibliography -->
