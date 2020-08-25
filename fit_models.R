@@ -139,6 +139,159 @@ fitLasso <- function(X, y, Xts = NULL, nfolds = 10, foldid = NULL,
               imp = imp, sest = sest))
 }
 
+fitRidge <- function(X, y, Xts = NULL, nfolds = 10, foldid = NULL, 
+                     cv_measure = "deviance", ...) {
+  #### Function Description ####
+  # fit ridge
+  # 
+  # input:
+  #   - X = training data matrix or data frame
+  #   - y = response vector
+  #   - Xts = (optional) test data matrix or test data frame
+  #   - nfolds = number of folds for CV to choose optimal lambda
+  #   - foldid = fold ids for CV; optional
+  #   - cv_measure = loss to use for CV; see cv.glmnet()
+  #   - ... = other arguments to feed into glmnet()
+  # 
+  # returns: list of 7
+  #   - yhat_tr = vector of predicted responses using training data
+  #   - yhat_ts = vector of predicted responses using test data
+  #   - fit = ridge model fit; output of glmnet()
+  #   - cv_fit = ridge model cv fit; output of cv.glmnet()
+  #   - best_lam = best lambda selected by cv
+  #   - imp = importance df, as measured by magnitude of ridge coefficient
+  #   - sest = estimated support
+  ##############
+  
+  # check if binary
+  binary <- FALSE
+  if (is.factor(y)) {
+    if (nlevels(y) == 2) {
+      binary <- TRUE
+    } else {
+      stop("Multi-level factor responses for Lasso has not been implemented.")
+    }
+  }
+  
+  if (binary) {
+    family <- "binomial"
+    response <- "response"
+  } else {
+    family <- "gaussian"
+    response <- "link"
+  }
+  
+  # create model matrix (to deal with categorical features)
+  X_all <- model.matrix(~., as.data.frame(rbind(X, Xts)))[, -1]  # rm intercept
+  X <- X_all[1:nrow(X), ]
+  if (!is.null(Xts)) {
+    Xts <- X_all[(nrow(X) + 1):nrow(X_all), ]
+  }
+  
+  # fit model
+  cv_fit <- cv.glmnet(x = as.matrix(X), y = y, alpha = 0,
+                      family = family, type.measure = cv_measure,
+                      nfolds = nfolds, foldid = foldid, ...)
+  fit <- glmnet(x = as.matrix(X), y = y, alpha = 0, 
+                lambda = cv_fit$lambda.min, family = family, ...)
+  cat(paste0("Best lambda: ", cv_fit$lambda.min, "\n"))
+  
+  # make predictions
+  yhat_tr <- c(predict(fit, as.matrix(X), type = response))
+  if (!is.null(Xts)) {
+    yhat_ts <- c(predict(fit, as.matrix(Xts), type = response))
+  } else {
+    yhat_ts <- NULL
+  }
+  
+  # get support
+  imp <- as.data.frame(as.matrix(abs(fit$beta))) %>%
+    setNames("imp") %>%
+    rownames_to_column("var")
+  sest <- which(imp$imp > mean(imp$imp))
+  
+  return(list(yhat_tr = yhat_tr, yhat_ts = yhat_ts,
+              fit = fit, cv_fit = cv_fit, best_lam = cv_fit$lambda.min, 
+              imp = imp, sest = sest))
+}
+
+fitElnet <- function(X, y, Xts = NULL, alpha = .5, nfolds = 10, foldid = NULL, 
+                     cv_measure = "deviance", ...) {
+  #### Function Description ####
+  # fit elastic net
+  # 
+  # input:
+  #   - X = training data matrix or data frame
+  #   - y = response vector
+  #   - Xts = (optional) test data matrix or test data frame
+  #   - alpha = elastic net tuning parameter
+  #   - nfolds = number of folds for CV to choose optimal lambda
+  #   - foldid = fold ids for CV; optional
+  #   - cv_measure = loss to use for CV; see cv.glmnet()
+  #   - ... = other arguments to feed into glmnet()
+  # 
+  # returns: list of 7
+  #   - yhat_tr = vector of predicted responses using training data
+  #   - yhat_ts = vector of predicted responses using test data
+  #   - fit = elastic net model fit; output of glmnet()
+  #   - cv_fit = elastic net model cv fit; output of cv.glmnet()
+  #   - best_lam = best lambda selected by cv
+  #   - imp = importance df, as measured by magnitude of ridge coefficient
+  #   - sest = estimated support
+  ##############
+  
+  # check if binary
+  binary <- FALSE
+  if (is.factor(y)) {
+    if (nlevels(y) == 2) {
+      binary <- TRUE
+    } else {
+      stop("Multi-level factor responses for Lasso has not been implemented.")
+    }
+  }
+  
+  if (binary) {
+    family <- "binomial"
+    response <- "response"
+  } else {
+    family <- "gaussian"
+    response <- "link"
+  }
+  
+  # create model matrix (to deal with categorical features)
+  X_all <- model.matrix(~., as.data.frame(rbind(X, Xts)))[, -1]  # rm intercept
+  X <- X_all[1:nrow(X), ]
+  if (!is.null(Xts)) {
+    Xts <- X_all[(nrow(X) + 1):nrow(X_all), ]
+  }
+  
+  # fit model
+  cv_fit <- cv.glmnet(x = as.matrix(X), y = y, alpha = alpha,
+                      family = family, type.measure = cv_measure,
+                      nfolds = nfolds, foldid = foldid, ...)
+  fit <- glmnet(x = as.matrix(X), y = y, alpha = alpha, 
+                lambda = cv_fit$lambda.min, family = family, ...)
+  cat(paste0("Best lambda: ", cv_fit$lambda.min, "\n"))
+  
+  # make predictions
+  yhat_tr <- c(predict(fit, as.matrix(X), type = response))
+  if (!is.null(Xts)) {
+    yhat_ts <- c(predict(fit, as.matrix(Xts), type = response))
+  } else {
+    yhat_ts <- NULL
+  }
+  
+  # get support
+  imp <- as.data.frame(as.matrix(abs(fit$beta))) %>%
+    setNames("imp") %>%
+    rownames_to_column("var")
+  sest <- which(imp$imp > 0)
+  
+  return(list(yhat_tr = yhat_tr, yhat_ts = yhat_ts,
+              fit = fit, cv_fit = cv_fit, best_lam = cv_fit$lambda.min, 
+              imp = imp, sest = sest))
+}
+
 fitRF <- function(X, y, Xts = NULL, nfolds = 10, foldid = NULL, caret = FALSE,
                   tune_grid = NULL, caret_params = NULL, ...) {
   #### Function Description ####

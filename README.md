@@ -1,6 +1,6 @@
 # R Utility Toolbox
 
-A collection of my frequently used R functions to make life easier as a statistician and data scientist
+A collection of my random but frequently used R functions to make life easier as a statistician and data scientist
 
 ## Overview of Toolbox
 
