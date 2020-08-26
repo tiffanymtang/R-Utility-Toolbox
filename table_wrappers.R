@@ -289,7 +289,7 @@ myDT <- function(X, digits = 3, sigfig = T,
   colnames(dt_df) <- colnames(X)
   
   # make datatable
-  dt_out <- DT::datatable(dt_df, escape = escape, caption = caption)
+  dt_out <- DT::datatable(dt_df, escape = escape, caption = caption, ...)
   
   if (return_df) {
     return(list(dt = dt_out, df = dt_df))
