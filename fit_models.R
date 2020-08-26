@@ -63,8 +63,8 @@ fitLM <- function(X, y, Xts = NULL, p_cut = 0.05) {
               fit = fit, imp = imp, sest = sest))
 }
 
-fitLasso <- function(X, y, Xts = NULL, nfolds = 10, foldid = NULL, 
-                     cv_measure = "deviance", ...) {
+fitLasso <- function(X, y, Xts = NULL, nfolds = 10, foldid = NULL,
+                     lambda = NULL, cv_measure = "deviance", ...) {
   #### Function Description ####
   # fit Lasso
   # 
@@ -74,6 +74,7 @@ fitLasso <- function(X, y, Xts = NULL, nfolds = 10, foldid = NULL,
   #   - Xts = (optional) test data matrix or test data frame
   #   - nfolds = number of folds for CV to choose optimal lambda
   #   - foldid = fold ids for CV; optional
+  #   - lambda = lambda for cv.glmnet()
   #   - cv_measure = loss to use for CV; see cv.glmnet()
   #   - ... = other arguments to feed into glmnet()
   # 
@@ -115,7 +116,7 @@ fitLasso <- function(X, y, Xts = NULL, nfolds = 10, foldid = NULL,
   # fit model
   cv_fit <- cv.glmnet(x = as.matrix(X), y = y, alpha = 1,
                       family = family, type.measure = cv_measure,
-                      nfolds = nfolds, foldid = foldid, ...)
+                      nfolds = nfolds, foldid = foldid, lambda = lambda, ...)
   fit <- glmnet(x = as.matrix(X), y = y, alpha = 1, 
                 lambda = cv_fit$lambda.min, family = family, ...)
   cat(paste0("Best lambda: ", cv_fit$lambda.min, "\n"))
@@ -140,7 +141,7 @@ fitLasso <- function(X, y, Xts = NULL, nfolds = 10, foldid = NULL,
 }
 
 fitRidge <- function(X, y, Xts = NULL, nfolds = 10, foldid = NULL, 
-                     cv_measure = "deviance", ...) {
+                     lambda = NULL, cv_measure = "deviance", ...) {
   #### Function Description ####
   # fit ridge
   # 
@@ -150,6 +151,7 @@ fitRidge <- function(X, y, Xts = NULL, nfolds = 10, foldid = NULL,
   #   - Xts = (optional) test data matrix or test data frame
   #   - nfolds = number of folds for CV to choose optimal lambda
   #   - foldid = fold ids for CV; optional
+  #   - lambda = lambda for cv.glmnet()
   #   - cv_measure = loss to use for CV; see cv.glmnet()
   #   - ... = other arguments to feed into glmnet()
   # 
@@ -191,7 +193,7 @@ fitRidge <- function(X, y, Xts = NULL, nfolds = 10, foldid = NULL,
   # fit model
   cv_fit <- cv.glmnet(x = as.matrix(X), y = y, alpha = 0,
                       family = family, type.measure = cv_measure,
-                      nfolds = nfolds, foldid = foldid, ...)
+                      nfolds = nfolds, foldid = foldid, lambda = lambda, ...)
   fit <- glmnet(x = as.matrix(X), y = y, alpha = 0, 
                 lambda = cv_fit$lambda.min, family = family, ...)
   cat(paste0("Best lambda: ", cv_fit$lambda.min, "\n"))
@@ -216,7 +218,7 @@ fitRidge <- function(X, y, Xts = NULL, nfolds = 10, foldid = NULL,
 }
 
 fitElnet <- function(X, y, Xts = NULL, alpha = .5, nfolds = 10, foldid = NULL, 
-                     cv_measure = "deviance", ...) {
+                     lambda = NULL, cv_measure = "deviance", ...) {
   #### Function Description ####
   # fit elastic net
   # 
@@ -227,6 +229,7 @@ fitElnet <- function(X, y, Xts = NULL, alpha = .5, nfolds = 10, foldid = NULL,
   #   - alpha = elastic net tuning parameter
   #   - nfolds = number of folds for CV to choose optimal lambda
   #   - foldid = fold ids for CV; optional
+  #   - lambda = lambda for cv.glmnet()
   #   - cv_measure = loss to use for CV; see cv.glmnet()
   #   - ... = other arguments to feed into glmnet()
   # 
@@ -268,7 +271,7 @@ fitElnet <- function(X, y, Xts = NULL, alpha = .5, nfolds = 10, foldid = NULL,
   # fit model
   cv_fit <- cv.glmnet(x = as.matrix(X), y = y, alpha = alpha,
                       family = family, type.measure = cv_measure,
-                      nfolds = nfolds, foldid = foldid, ...)
+                      nfolds = nfolds, foldid = foldid, lambda = lambda, ...)
   fit <- glmnet(x = as.matrix(X), y = y, alpha = alpha, 
                 lambda = cv_fit$lambda.min, family = family, ...)
   cat(paste0("Best lambda: ", cv_fit$lambda.min, "\n"))
