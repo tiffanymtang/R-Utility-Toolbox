@@ -8,6 +8,8 @@ library(ranger)
 library(caret)
 library(xgboost)
 library(e1071)
+library(kernlab)
+library(KRLS)
 
 fitLM <- function(X, y, Xts = NULL, p_cut = 0.05) {
   #### Function Description ####
@@ -611,6 +613,242 @@ fitXGB <- function(X, y, Xts = NULL, nfolds = 10, foldid = NULL,
               imp = imp, sest = sest))
 }
 
+fitSVM <- function(X, y, Xts = NULL, nfolds = 10, foldid = NULL,
+                   tune_grid = NULL, caret_params = NULL, ...) {
+  #### Function Description ####
+  # fit svm via caret() and kernlab()
+  # 
+  # input:
+  #   - X = training data matrix or data frame
+  #   - y = response vector
+  #   - Xts = (optional) test data matrix or test data frame
+  #   - nfolds = number of folds for CV
+  #   - foldid = fold ids for CV; optional
+  #   - tune_grid = grid of tuning parameters to search over
+  #   - caret_params = list of named arguments for training caret; possible
+  #     named arguments are summaryFunction, classProbs, metric, response
+  #   - ... = other arguments to feed into kernlab::ksvm()
+  # 
+  # returns: list of 4
+  #   - yhat_tr = vector of predicted responses using training data
+  #   - yhat_ts = vector of predicted responses using test data
+  #   - fit = xgb model fit; output of ranger()
+  #   - imp = NULL
+  #   - sest = NULL
+  ##############
+  
+  if (!is.null(foldid)) {  # split by study
+    foldid_ls <- lapply(unique(foldid), FUN = function(i) {
+      return(c(1:nrow(X))[foldid != i])
+    })
+  } else {  # do normal CV
+    foldid_ls <- NULL
+  }
+  
+  # default train control parameters
+  if (is.factor(y)) {
+    summaryFunction <- defaultSummary
+    classProbs <- TRUE
+    metric <- "Accuracy"
+    response <- "prob"
+  } else {
+    stop("SVM has not been implemented for continuous response.")
+  }
+  
+  if (!is.null(caret_params)) {
+    if (!is.list(caret_params) | is.null(names(caret_params))) {
+      stop("caret_params must be a named list of arguments.")
+    } else {
+      if ("summaryFunction" %in% names(caret_params)) {
+        summaryFunction <- caret_params$summaryFunction
+      }
+      if ("classProbs" %in% names(caret_params)) {
+        classProbs <- caret_params$classProbs
+      }
+      if ("metric" %in% names(caret_params)) {
+        metric <- caret_params$metric
+      }
+      if ("response" %in% names(caret_params)) {
+        response <- caret_params$response
+      }
+    }
+  }
+  
+  # how to do splitting
+  trcontrol <- trainControl(
+    method = "cv",
+    number = nfolds,
+    index = foldid_ls,
+    classProbs = classProbs,
+    summaryFunction = summaryFunction,
+    allowParallel = FALSE,
+    verboseIter = FALSE
+  )
+  
+  # tuning grid
+  if (is.null(tune_grid)) {
+    tune_grid <- expand.grid(
+      C = c(1e-3, 1e-2, 1e-1, 1, 1e2, 1e3),
+      sigma = c(1e-3, 1e-2, 1e-1, 1, 1e2, 1e3)
+    )
+  }
+  
+  # create model matrix (to deal with categorical features)
+  X_all <- model.matrix(~., as.data.frame(rbind(X, Xts)))[, -1]  # rm intercept
+  X <- X_all[1:nrow(X), ]
+  if (!is.null(Xts)) {
+    Xts <- X_all[(nrow(X) + 1):nrow(X_all), ]
+  }
+  
+  # fit model
+  fit <- train(x = as.data.frame(X), y = y,
+               trControl = trcontrol,
+               tuneGrid = tune_grid,
+               method = "svmRadial",
+               type = "C-svc",
+               metric = metric,
+               prob.model = TRUE, ...)
+  cat("Best svm hyperparameters:\n")
+  print(fit$bestTune)
+  
+  # make predictions
+  yhat_tr <- predict(fit, as.data.frame(X), type = response)[, -1]
+  if (!is.null(Xts)) {
+    yhat_ts <- predict(fit, as.data.frame(Xts), type = response)[, -1]
+  } else {
+    yhat_ts <- NULL
+  }
+  
+  # get support
+  imp <- NULL
+  sest <- NULL
+  
+  return(list(yhat_tr = yhat_tr, yhat_ts = yhat_ts, fit = fit, 
+              imp = imp, sest = sest))
+}
 
-
+fitKernelRidge <- function(X, y, Xts = NULL, kern = "gaussian",
+                           caret = FALSE, nfolds = 10, foldid = NULL, 
+                           tune_grid = NULL, caret_params = NULL, ...) {
+  #### Function Description ####
+  # fit kernel ridge regression via krls()
+  # 
+  # input:
+  #   - X = training data matrix or data frame
+  #   - y = response vector
+  #   - Xts = (optional) test data matrix or test data frame
+  #   - kern = name of kernel to use
+  #   - caret = logical; whether or not to tune mtry with caret
+  #   - nfolds = number of folds for CV; used only if caret = T
+  #   - foldid = fold ids for CV; optional and used only if caret = T
+  #   - tune_grid = grid of tuning parameters to search over; used only if
+  #     caret = T
+  #   - caret_params = list of named arguments for training caret; used
+  #     only if caret = T; possible named arguments are summaryFunction, 
+  #     classProbs, split_rule, min_node_size, metric, response
+  #   - ... = other arguments to feed into krls()
+  # 
+  # returns: list of 5
+  #   - yhat_tr = vector of predicted responses using training data
+  #   - yhat_ts = vector of predicted responses using test data
+  #   - fit = elastic net model fit; output of krls()
+  #   - imp = NULL
+  #   - sest = NULL
+  ##############
+  
+  # check if categorical y
+  if (is.factor(y)) {
+    stop("Kernel ridge regression has not been implemented for categorical outcomes.")
+  }
+  
+  # create model matrix (to deal with categorical features)
+  X_all <- model.matrix(~., as.data.frame(rbind(X, Xts)))[, -1]  # rm intercept
+  X <- X_all[1:nrow(X), ]
+  if (!is.null(Xts)) {
+    Xts <- X_all[(nrow(X) + 1):nrow(X_all), ]
+  }
+  
+  if (!caret) {
+    # fit model (default is gaussian kernel)
+    fit <- krls(X = X, y = y, whichkernel = kern, print.level = 0, ...)
+    print(paste0("lamda = ", fit$lambda, " and sigma = ", fit$sigma))
+    
+    # make predictions
+    yhat_tr <- c(predict(fit, X)$fit)
+    if (!is.null(Xts)) {
+      yhat_ts <- c(predict(fit, Xts)$fit)
+    } else {
+      yhat_ts <- NULL
+    }
+    
+  } else {
+    
+    if (!is.null(foldid)) {  # split by study
+      foldid_ls <- lapply(unique(foldid), FUN = function(i) {
+        return(c(1:nrow(X))[foldid != i])
+      })
+    } else {  # do normal Cv
+      foldid_ls <- NULL
+    }
+    
+    # default train control parameters
+    summaryFunction <- defaultSummary
+    metric <- "RMSE"
+    
+    if (!is.null(caret_params)) {
+      if (!is.list(caret_params) | 
+          is.null(names(caret_params))) {
+        stop("caret_params must be a named list of arguments.")
+      } else {
+        if ("summaryFunction" %in% names(caret_params)) {
+          summaryFunction <- caret_params$summaryFunction
+        }
+        if ("metric" %in% names(caret_params)) {
+          metric <- caret_params$metric
+        }
+      }
+    }
+    
+    # how to do splitting
+    trcontrol <- trainControl(
+      method = "cv",
+      number = nfolds,
+      index = foldid_ls,
+      summaryFunction = summaryFunction,
+      allowParallel = FALSE,
+      verboseIter = FALSE
+    )
+    
+    # tuning grid
+    if (is.null(tune_grid)) {
+      tune_grid <- expand.grid(lambda = c(1e-2, 1e-1, 1, 1e2, 1e3),
+                               sigma = c(1e-2, 1e-1, 1, 1e2, 1e3))
+    }
+    
+    # fit model
+    fit <- train(x = X, y = y,
+                 trControl = trcontrol,
+                 tuneGrid = tune_grid,
+                 method = "krlsRadial",
+                 metric = metric,
+                 print.level = 0, ...)
+    cat("Best krls hyperparameters:\n")
+    print(fit$bestTune)
+    
+    # make predictions
+    yhat_tr <- predict(fit, X)
+    if (!is.null(Xts)) {
+      yhat_ts <- predict(fit, Xts)
+    } else {
+      yhat_ts <- NULL
+    }
+  }
+  
+  # get support
+  imp <- NULL
+  sest <- NULL
+  
+  return(list(yhat_tr = yhat_tr, yhat_ts = yhat_ts,
+              fit = fit, imp = imp, sest = sest))
+}
 
