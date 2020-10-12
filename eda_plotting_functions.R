@@ -689,6 +689,7 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
 plotHclust <- function(data, y = NULL,
                        dist.metric = "euclidean", linkage = "ward.D",
                        show.y.text = T, text.size = 0.5, show.plt = F,
+                       title = NULL, manual.color = NULL, 
                        save = F, save.filename = NULL) {
   ####### Function Description ########
   # perform hierarchical clustering and plot resulting dendrogram
@@ -701,6 +702,7 @@ plotHclust <- function(data, y = NULL,
   # - show.y.text = logical; whether or not to print y text or just the color
   # - text.size = size of text for leaves
   # - title = string for plot title name
+  # - manual.color = vector of manual colors for leaf text labels
   # - show.plt = logical; whether or not to show plot
   # - save = logical; whether or not to save plot as rds file
   # - save.filename = string ending in .rds; where to save file
@@ -730,10 +732,18 @@ plotHclust <- function(data, y = NULL,
   if (!is.null(y)) {  # annotate tree leaves
     
     if (is.factor(y)) {  # categorical y
-      my_colors <- 1:length(unique(y))
+      if (is.null(manual.color)) {
+        my_colors <- 1:length(unique(y))
+      } else {
+        my_colors <- manual.color
+      }
       labels_colors(hclust_dend) <- my_colors[y][order.dendrogram(hclust_dend)]
     } else {  # continuous y
-      my_colors <- colorNumeric(palette = "viridis", domain = c(min(y), max(y)))
+      if (is.null(manual.color)) {
+        my_colors <- colorNumeric(palette = "viridis", domain = c(min(y), max(y)))
+      } else {
+        my_colors <- manual.color
+      }
       labels_colors(hclust_dend) <- my_colors(y)[order.dendrogram(hclust_dend)]
     }
     
@@ -748,10 +758,12 @@ plotHclust <- function(data, y = NULL,
                                                    text.size, "lab.cex")
   }
   
-  title <- paste0(
-    "Hierarchical Clustering: \n",
-    linkage, " Linkage, ", dist.metric, " Distance"
-  )
+  if (is.null(title)) {
+    title <- paste0(
+      "Hierarchical Clustering: \n",
+      linkage, " Linkage, ", dist.metric, " Distance"
+    )
+  }
 
   if (show.plt) {
     plot(hclust_dend, main = title, horiz = FALSE)
