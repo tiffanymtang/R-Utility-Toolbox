@@ -39,7 +39,8 @@ A collection of my random but frequently used R functions to make life easier as
 	- **fitXGB()**: fit an xgboost model
 
 - **eval_functions.R**: functions for evaluating prediction models
-	- **evalPreds()**: function to calculate prediction error between observed and predicted responses, as measured by MSE, $R^2$, MAE, correlation, classification error, AUC, and/or PR
+	- **evalPreds()**: function to calculate prediction error between observed and predicted responses, as measured by MSE, $R^2$, MAE, correlation, (balanced) classification error, AUC, and/or PR
+	- **evalPermTest()**: function to perform permutation test for prediction error between observed and predicted responses
 
 ### Plots and Tables
 
