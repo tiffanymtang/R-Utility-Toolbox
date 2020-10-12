@@ -12,7 +12,8 @@ evalPreds <- function(y, yhat, metric, group = NULL, na.rm = F) {
   # - y = vector, matrix, or data.frame of the true response values
   # - yhat = vector, matrix, or data.frame of the true response values
   # - metric = character vector of prediction error metrics to compute; elements
-  #   should be one of "MSE", "R2", "MAE", "Correlation", "Class", "AUC", "PR"
+  #   should be one of "MSE", "R2", "MAE", "Correlation", "Class",
+  #   "BalancedClass", "AUC", "PR"
   # - group = (optional) vector of factors to group prediction errors by
   # - na.rm = logical; whether or not to remove NAs
   # 
@@ -29,7 +30,8 @@ evalPreds <- function(y, yhat, metric, group = NULL, na.rm = F) {
     stop("y and yhat must be the same size.")
   }
   if (!all(metric %in% c("MSE", "R2", "MAE", 
-                         "Correlation", "Class", "AUC", "PR"))) {
+                         "Correlation", "Class", "BalancedClass",
+                         "AUC", "PR"))) {
     stop("metric has not been implemented.")
   }
   if (("AUC" %in% metric) | ("PR" %in% metric)) {
@@ -93,7 +95,16 @@ evalPreds <- function(y, yhat, metric, group = NULL, na.rm = F) {
     } else if (m == "Class") {
       err <- pred_df %>%
         summarise(Metric = m,
-                  Value = mean(y != yhat, na.rm = na.rm))
+                  Value = mean(y == yhat, na.rm = na.rm))
+    } else if (m == "BalancedClass") {
+      err <- pred_df %>%
+        summarise(Metric = m,
+                  Value = mean(sapply(unique(y),
+                                      function(y0) {
+                                        mean(y[y == y0] == yhat[y == y0], 
+                                             na.rm = na.rm)
+                                      }),
+                               na.rm = na.rm))
     } else if (m == "AUC") {
       err <- pred_df %>%
         summarise(Metric = m,
@@ -125,4 +136,53 @@ evalPreds <- function(y, yhat, metric, group = NULL, na.rm = F) {
   }
   
   return(err_out)
+}
+
+evalPermTest <- function(y, yhat, metric, B = 1e3, na.rm = F) {
+  ####### Function Description ########
+  # perform permutation test for prediction error between observed y and
+  # predicted y
+  # 
+  # inputs:
+  # - y = vector, matrix, or data.frame of the true response values
+  # - yhat = vector, matrix, or data.frame of the true response values
+  # - metric = character vector of prediction error metrics to compute; elements
+  #   should be one of "MSE", "R2", "MAE", "Correlation", "Class", "BalancedClass", "AUC", "PR"
+  # - B = number of permutations
+  # - na.rm = logical; whether or not to remove NAs
+  # 
+  # output: a list of 3
+  # - pval = vector of pvalues for each metric
+  # - obs_err = vector of observed errors for each metric
+  # - perm_dist = data frame of errors that make up the null permutation 
+  #     distribution
+  #######
+  
+  # observed error
+  obs_errs <- evalPreds(y = y, yhat = yhat, metric = metric, na.rm = na.rm)
+  
+  # permutation distribution
+  errs <- replicate(
+    n = B, 
+    expr = {
+      yhat_perm <- sample(yhat)
+      err_perm <- evalPreds(y = y, yhat = yhat_perm, 
+                            metric = metric, na.rm = na.rm)
+      return(err_perm)
+    },
+    simplify = FALSE
+  ) %>%
+    map_dfr(., rbind, .id = "b") %>%
+    spread(Metric, Value) %>%
+    select(-b)
+  
+  # compute p-value
+  pvals <- rep(NA, length(metric))
+  names(pvals) <- metric
+  for (m in metric) {
+    pvals[m] <- mean(errs[, m] >= obs_errs$Value[obs_errs$Metric == m])
+  }
+  
+  return(list(pval = pvals, obs_err = obs_errs, perm_dist = errs))
+  
 }
