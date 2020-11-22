@@ -6,9 +6,11 @@ library(RColorBrewer)
 library(stringr)
 
 myGGplotTheme <- function(font = "Helvetica",
-                          panel_grid_major_color = "grey90",
-                          panel_background_color = "grey98",
+                          background_color = "grey98",
                           strip_background_color = "#2c3e50",
+                          grid_color = "grey90",
+                          axis_line_width = 1,
+                          show_ticks = TRUE,
                           x_text_angle = FALSE,
                           size_theme = NULL,
                           axis_title_size = 10, axis_text_size = 7,
@@ -20,9 +22,11 @@ myGGplotTheme <- function(font = "Helvetica",
   # 
   # inputs:
   # - font = font family for ggplot text
-  # - panel_grid_major_color = color of panel grid major axes
-  # - panel_background_color = color for plot background
+  # - background_color = color for plot background
   # - strip_background_color = color for strip background (for facet_grid/wrap)
+  # - grid_color = color of panel grid major axes or NULL if want no major grid lines
+  # - axis_line_width = width of x and y axes lines
+  # - show_tickes = logical; whether or not to show axes tick marks
   # - x_text_angle = logical; whether or not to angle x text at 45 degrees
   # - size_theme = "small", "normal", "large", "xlarge"; default sizes for
   #     plot text and titles; if NULL, defaults to values specified by 
@@ -79,14 +83,14 @@ myGGplotTheme <- function(font = "Helvetica",
                               size = axis_title_size, 
                               face = "bold"),
     axis.text = element_text(family = font, size = axis_text_size),
-    axis.line = element_line(size = 1, color = "black"),
-    axis.ticks = element_line(size = rel(1), colour = "black"),
+    axis.line = element_line(size = axis_line_width, color = "black"),
+    axis.ticks = element_line(size = ifelse(show_ticks, rel(1), 0), colour = "black"),
     axis.text.x = element_text(angle = ifelse(x_text_angle, 45, 0),
                                hjust = ifelse(x_text_angle, 1, 0.5)),
-    panel.grid.major = element_line(colour = panel_grid_major_color,
+    panel.grid.major = element_line(colour = grid_color,
                                     size = rel(0.5)),
     panel.grid.minor = element_blank(),
-    panel.background = element_rect(fill = panel_background_color),
+    panel.background = element_rect(fill = background_color),
     strip.background = element_rect(fill = strip_background_color,
                                     color = strip_background_color),
     strip.text = element_text(color = "white",
