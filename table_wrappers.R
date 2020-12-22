@@ -23,8 +23,8 @@ myKable <- function(X, digits = 3, sigfig = T, align = "c",
   # - caption = string; caption of table
   # - format = string; one of "html" or "latex" indicating output format
   # - na_disp = what to display if NA entry is found in X
-  # - bold_function = optional function string to use for bolding entries, e.g.
-  #     ". == max(.)" or ". >= 0.5"
+  # - bold_function = optional function string or vector of function strings to
+  #     use for bolding entries, e.g. ". == max(.)" or ". >= 0.5"
   # - bold_margin = used to evaluate bold_function across margins of X 
   #   (0 = over entire matrix, 1 = over rows, 2 = over columns)
   # - bold_scheme = scalar or vector of logicals, indicating whether or not to 
@@ -71,7 +71,7 @@ myKable <- function(X, digits = 3, sigfig = T, align = "c",
     if (is.null(bold_margin)) {
       stop("bold_margin must be specified to bold entries in kable.")
     } else if (bold_margin == 0) {
-      if (length(bold_scheme) == 0) {
+      if (length(bold_scheme) == 1) {
         bold_scheme <- rep(bold_scheme, ncol(X))
       } else if (length(bold_scheme) != ncol(X)) {
         stop("bold_scheme must be a scalar or vector of length ncol(X).")
@@ -91,6 +91,11 @@ myKable <- function(X, digits = 3, sigfig = T, align = "c",
     } else {
       stop("bold_margin must be NULL, 0, 1, or 2.")
     }
+    
+    if (!(length(bold_function) %in% c(1, length(bold_scheme)))) {
+      stop(paste0("bold_function must be a scalar or vector of length ", 
+                  length(bold_scheme)))
+    }
   }
   
   X <- as.data.frame(X, row.names = rownames(X))
@@ -104,28 +109,30 @@ myKable <- function(X, digits = 3, sigfig = T, align = "c",
     if (bold_margin == 0) {
       bold_function <- str_replace(bold_function, "\\(.\\)", 
                                    "\\(X[, bold_scheme]\\)")
-      X_kable <- X
+      kable_df <- X
     } else if (bold_margin == 1) {
-      X_kable <- as.data.frame(t(X))
+      kable_df <- as.data.frame(t(X))
     } else if (bold_margin == 2) {
-      X_kable <- X
+      kable_df <- X
     }
     
-    kable_df <- X_kable %>%
-      mutate_at(
-        colnames(.)[bold_scheme],
-        list(~case_when(
-          is.na(.) ~ na_disp,
-          eval(parse(text = bold_function)) ~ 
-            cell_spec(formatC(., 
-                              digits = digits, format = dig_format, flag = "#"),
-                      color = bold_color, bold = T, format = format),
-          TRUE ~ 
-            cell_spec(formatC(.,
-                              digits = digits, format = dig_format, flag = "#"),
-                      bold = F, format = format)
-        ))
-      )
+    for (f in unique(bold_function)) {
+      kable_df <- kable_df %>%
+        mutate_at(
+          colnames(.)[bold_scheme][bold_function == f],
+          list(~case_when(
+            is.na(.) ~ na_disp,
+            eval(parse(text = f)) ~ 
+              cell_spec(formatC(., digits = digits, format = dig_format, 
+                                flag = "#"),
+                        color = bold_color, bold = T, format = format),
+            TRUE ~ 
+              cell_spec(formatC(., digits = digits, format = dig_format,
+                                flag = "#"),
+                        bold = F, format = format)
+          ))
+        )
+    }
     
     if (bold_margin == 1) {
       kable_df <- as.data.frame(t(kable_df))
@@ -179,8 +186,8 @@ myDT <- function(X, digits = 3, sigfig = T,
   # - escape = T/F; whether or not to escape HTML entities in table
   # - caption = string; caption of table
   # - na_disp = what to display if NA entry is found in X
-  # - bold_function = optional function string to use for bolding entries, e.g.
-  #     ". == max(.)" or ". >= 0.5"
+  # - bold_function = optional function string or vector of function strings to
+  #     use for bolding entries, e.g. ". == max(.)" or ". >= 0.5"
   # - bold_margin = used to evaluate bold_function across margins of X 
   #   (0 = over entire matrix, 1 = over rows, 2 = over columns)
   # - bold_scheme = scalar or vector of logicals, indicating whether or not to 
@@ -216,7 +223,7 @@ myDT <- function(X, digits = 3, sigfig = T,
     if (is.null(bold_margin)) {
       stop("bold_margin must be specified to bold entries in datatable.")
     } else if (bold_margin == 0) {
-      if (length(bold_scheme) == 0) {
+      if (length(bold_scheme) == 1) {
         bold_scheme <- rep(bold_scheme, ncol(X))
       } else if (length(bold_scheme) != ncol(X)) {
         stop("bold_scheme must be a scalar or vector of length ncol(X).")
@@ -236,6 +243,11 @@ myDT <- function(X, digits = 3, sigfig = T,
     } else {
       stop("bold_margin must be NULL, 0, 1, or 2.")
     }
+    
+    if (!(length(bold_function) %in% c(1, length(bold_scheme)))) {
+      stop(paste0("bold_function must be a scalar or vector of length ", 
+                  length(bold_scheme)))
+    }
   }
   
   X <- as.data.frame(X, row.names = rownames(X))
@@ -249,28 +261,30 @@ myDT <- function(X, digits = 3, sigfig = T,
     if (bold_margin == 0) {
       bold_function <- str_replace(bold_function, "\\(.\\)", 
                                    "\\(X[, bold_scheme]\\)")
-      X_dt <- X
+      dt_df <- X
     } else if (bold_margin == 1) {
-      X_dt <- as.data.frame(t(X))
+      dt_df <- as.data.frame(t(X))
     } else if (bold_margin == 2) {
-      X_dt <- X
+      dt_df <- X
     }
     
-    dt_df <- X_dt %>%
-      mutate_at(
-        colnames(.)[bold_scheme],
-        list(~case_when(
-          is.na(.) ~ na_disp,
-          eval(parse(text = bold_function)) ~ 
-            cell_spec(formatC(., 
-                              digits = digits, format = dig_format, flag = "#"),
-                      color = bold_color, bold = T, format = "html"),
-          TRUE ~ 
-            cell_spec(formatC(.,
-                              digits = digits, format = dig_format, flag = "#"),
-                      bold = F, format = "html")
-        ))
-      )
+    for (f in unique(bold_function)) {
+      dt_df <- dt_df %>%
+        mutate_at(
+          colnames(.)[bold_scheme][bold_function == f],
+          list(~case_when(
+            is.na(.) ~ na_disp,
+            eval(parse(text = f)) ~ 
+              cell_spec(formatC(., digits = digits, format = dig_format,
+                                flag = "#"),
+                        color = bold_color, bold = T, format = "html"),
+            TRUE ~ 
+              cell_spec(formatC(., digits = digits, format = dig_format,
+                                flag = "#"),
+                        bold = F, format = "html")
+          ))
+        )
+    }
     
     if (bold_margin == 1) {
       dt_df <- as.data.frame(t(dt_df))
