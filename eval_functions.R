@@ -12,7 +12,7 @@ evalPreds <- function(y, yhat, metric, group = NULL, na.rm = F) {
   # - y = vector, matrix, or data.frame of the true response values
   # - yhat = vector, matrix, or data.frame of the true response values
   # - metric = character vector of prediction error metrics to compute; elements
-  #   should be one of "MSE", "R2", "MAE", "Correlation", "Class",
+  #   should be one of "RMSE", "MSE", "R2", "MAE", "Correlation", "Class",
   #   "BalancedClass", "AUC", "PR"
   # - group = (optional) vector of factors to group prediction errors by
   # - na.rm = logical; whether or not to remove NAs
@@ -75,7 +75,11 @@ evalPreds <- function(y, yhat, metric, group = NULL, na.rm = F) {
   # compute error metrics between y and yhat
   err_out <- NULL
   for (m in metric) {
-    if (m == "MSE") {
+    if (m == "RMSE") {
+      err <- pred_df %>%
+        summarise(Metric = m,
+                  Value = sqrt(mean((y - yhat)^2, na.rm = na.rm)))
+    } else if (m == "MSE") {
       err <- pred_df %>%
         summarise(Metric = m,
                   Value = mean((y - yhat)^2, na.rm = na.rm))
