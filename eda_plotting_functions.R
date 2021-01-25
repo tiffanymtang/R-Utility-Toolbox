@@ -472,12 +472,14 @@ plotPCA <- function(X, pca.out,
     } else { # only compute top singular vectors
       X_svd <- X %>% irlba(nu = max_pcs, nv = max_pcs)
     }
+    d = X_svd$d
   } else {
     X_svd <- list(
       u = pca.out$scores,
       v = pca.out$loadings,
       var_explained = pca.out$var.explained
     )
+    d = NULL
   }
   
   # compute and show proportion of variance
@@ -566,7 +568,7 @@ plotPCA <- function(X, pca.out,
   }
   
   return(list(
-    plot = plt, scores = X_svd$u, loadings = X_svd$v,
+    plot = plt, scores = X_svd$u, loadings = X_svd$v, d = d,
     var.explained = var_explained
   ))
 }
