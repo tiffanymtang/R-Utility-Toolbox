@@ -99,6 +99,7 @@ myKable <- function(X, digits = 3, sigfig = T, align = "c",
   }
   
   X <- as.data.frame(X, row.names = rownames(X))
+  int_cols <- sapply(X, is.integer)
   
   # bold entries according to bold_function if specified
   if (is.null(bold_function)) {
@@ -117,9 +118,23 @@ myKable <- function(X, digits = 3, sigfig = T, align = "c",
     }
     
     for (f in unique(bold_function)) {
+      # for integers
       kable_df <- kable_df %>%
         mutate_at(
-          colnames(.)[bold_scheme][bold_function == f],
+          colnames(.)[bold_scheme & int_cols][bold_function == f],
+          list(~case_when(
+            is.na(.) ~ na_disp,
+            eval(parse(text = f)) ~ 
+              cell_spec(., color = bold_color, bold = T, format = format),
+            TRUE ~ 
+              cell_spec(., bold = F, format = format)
+          ))
+        )
+      
+      # for non-integers
+      kable_df <- kable_df %>%
+        mutate_at(
+          colnames(.)[bold_scheme & !int_cols][bold_function == f],
           list(~case_when(
             is.na(.) ~ na_disp,
             eval(parse(text = f)) ~ 
@@ -141,11 +156,14 @@ myKable <- function(X, digits = 3, sigfig = T, align = "c",
   
   # format numeric columns
   kable_df <- kable_df %>%
-    mutate_if(is.numeric,
+    mutate_if(~is.numeric(.) & !is.integer(.),
               list(~ifelse(is.na(.), na_disp,
                            cell_spec(formatC(., digits = digits,
                                              format = dig_format, flag = "#"),
                                      format = format))))
+  kable_df <- kable_df %>%
+    mutate_if(is.integer,
+              list(~ifelse(is.na(.), na_disp, cell_spec(., format = format))))
   rownames(kable_df) <- rownames(X)
   colnames(kable_df) <- colnames(X)
   
@@ -251,6 +269,7 @@ myDT <- function(X, digits = 3, sigfig = T,
   }
   
   X <- as.data.frame(X, row.names = rownames(X))
+  int_cols <- sapply(X, is.integer)
   
   # bold entries according to bold_function if specified
   if (is.null(bold_function)) {
@@ -269,9 +288,23 @@ myDT <- function(X, digits = 3, sigfig = T,
     }
     
     for (f in unique(bold_function)) {
+      # for integers
       dt_df <- dt_df %>%
         mutate_at(
-          colnames(.)[bold_scheme][bold_function == f],
+          colnames(.)[bold_scheme & int_cols][bold_function == f],
+          list(~case_when(
+            is.na(.) ~ na_disp,
+            eval(parse(text = f)) ~ 
+              cell_spec(., color = bold_color, bold = T, format = "html"),
+            TRUE ~ 
+              cell_spec(., bold = F, format = "html")
+          ))
+        )
+      
+      # for non-integers
+      dt_df <- dt_df %>%
+        mutate_at(
+          colnames(.)[bold_scheme & !int_cols][bold_function == f],
           list(~case_when(
             is.na(.) ~ na_disp,
             eval(parse(text = f)) ~ 
@@ -293,11 +326,14 @@ myDT <- function(X, digits = 3, sigfig = T,
   
   # format numeric columns
   dt_df <- dt_df %>%
-    mutate_if(is.numeric,
+    mutate_if(~is.numeric(.) & !is.integer(.),
               list(~ifelse(is.na(.), na_disp,
                            cell_spec(formatC(., digits = digits,
                                              format = dig_format, flag = "#"),
                                      format = "html"))))
+  dt_df <- dt_df %>%
+    mutate_if(is.integer,
+              list(~ifelse(is.na(.), na_disp, cell_spec(., format = "html"))))
   dt_df[is.na(dt_df)] <- na_disp
   rownames(dt_df) <- rownames(X)
   colnames(dt_df) <- colnames(X)
