@@ -5,7 +5,7 @@ library(tidyverse)
 source("./ggplot_themes.R")
 
 plotBarplot <- function(data, x.str, fill.str = NULL, fill = "#6FBBE3", 
-                        show.plot = F, ...) {
+                        stat = "count", show.plot = F, ...) {
   ####### Function Description ########
   # plot nice barplots using custom ggplot theme
   # 
@@ -14,6 +14,7 @@ plotBarplot <- function(data, x.str, fill.str = NULL, fill = "#6FBBE3",
   # - x.str = string; name of variable to plot frequencies for
   # - fill.str = string (optional); variable name to use as color for plotting
   # - fill = barplot fill color
+  # - stat = see geom_bar()
   # - show.plot = logical; whether or not to print plot
   # ... = other geom_bar() arguments
   #
@@ -37,7 +38,7 @@ plotBarplot <- function(data, x.str, fill.str = NULL, fill = "#6FBBE3",
     plt <- ggplot(data) +
       aes(x = x) +
       labs(y = "Frequency", x = x.str) +
-      geom_bar(position = "dodge", stat = "count", color = "grey98",
+      geom_bar(position = "dodge", stat = stat, color = "grey98",
                fill = fill, ...) +
       myGGplotTheme()
   } else {
@@ -47,7 +48,7 @@ plotBarplot <- function(data, x.str, fill.str = NULL, fill = "#6FBBE3",
     plt <- ggplot(data) +
       aes(x = x, fill = fill) +
       labs(y = "Frequency", x = x.str, fill = fill.str) +
-      geom_bar(position = "dodge", stat = "count", color = "grey98", ...) +
+      geom_bar(position = "dodge", stat = stat, color = "grey98", ...) +
       myGGplotTheme() +
       myGGplotFill(fill = data$fill)
   }
