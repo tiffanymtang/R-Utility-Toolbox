@@ -4,7 +4,8 @@ library(tidyverse)
 
 source("./ggplot_themes.R")
 
-plotBarplot <- function(data, x.str, fill.str = NULL, fill = "#6FBBE3", 
+plotBarplot <- function(data, x.str, y.str = NULL,
+                        fill.str = NULL, fill = "#6FBBE3", 
                         stat = "count", show.plot = F, ...) {
   ####### Function Description ########
   # plot nice barplots using custom ggplot theme
@@ -12,6 +13,7 @@ plotBarplot <- function(data, x.str, fill.str = NULL, fill = "#6FBBE3",
   # inputs:
   # - data = data.frame for plotting
   # - x.str = string; name of variable to plot frequencies for
+  # - y.str = string; name of variable to plot on y axis (if stat = "identity")
   # - fill.str = string (optional); variable name to use as color for plotting
   # - fill = barplot fill color
   # - stat = see geom_bar()
@@ -32,22 +34,38 @@ plotBarplot <- function(data, x.str, fill.str = NULL, fill = "#6FBBE3",
   }
   
   if (is.null(fill.str)) {
-    data <- data %>%
-      rename(x = x.str)
-    
-    plt <- ggplot(data) +
-      aes(x = x) +
-      labs(y = "Frequency", x = x.str) +
+    if (is.null(y.str)) {
+      data <- data %>%
+        rename(x = x.str)
+      plt <- ggplot(data) +
+        aes(x = x) +
+        labs(y = "Frequency", x = x.str)
+    } else {
+      data <- data %>%
+        rename(x = x.str, y = y.str)
+      plt <- ggplot(data) +
+        aes(x = x, y = y) +
+        labs(y = y.str, x = x.str)
+    }
+    plt <- plt +
       geom_bar(position = "dodge", stat = stat, color = "grey98",
                fill = fill, ...) +
       myGGplotTheme()
   } else {
-    data <- data %>%
-      rename(x = x.str, fill = fill.str)
-    
-    plt <- ggplot(data) +
-      aes(x = x, fill = fill) +
-      labs(y = "Frequency", x = x.str, fill = fill.str) +
+    if (is.null(y.str)) {
+      data <- data %>%
+        rename(x = x.str, fill = fill.str)
+      plt <- ggplot(data) +
+        aes(x = x, fill = fill) +
+        labs(y = "Frequency", x = x.str, fill = fill.str)
+    } else {
+      data <- data %>%
+        rename(x = x.str, y = y.str, fill = fill.str)
+      plt <- ggplot(data) +
+        aes(x = x, y = y, fill = fill) +
+        labs(y = y.str, x = x.str, fill = fill.str)
+    }
+    plt <- plt + 
       geom_bar(position = "dodge", stat = stat, color = "grey98", ...) +
       myGGplotTheme() +
       myGGplotFill(fill = data$fill)
