@@ -29,7 +29,7 @@ evalPreds <- function(y, yhat, metric, group = NULL, na.rm = F) {
       (!isvec & any(dim(y) != dim(yhat)))) {
     stop("y and yhat must be the same size.")
   }
-  if (!all(metric %in% c("MSE", "R2", "MAE", 
+  if (!all(metric %in% c("RMSE", "MSE", "R2", "MAE", 
                          "Correlation", "Class", "BalancedClass",
                          "AUC", "PR"))) {
     stop("metric has not been implemented.")
