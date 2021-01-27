@@ -95,7 +95,7 @@ evalPreds <- function(y, yhat, metric, group = NULL, na.rm = F) {
     } else if (m == "Correlation") {
       err <- pred_df %>%
         summarise(Metric = m,
-                  cor(y, yhat, use = "pairwise.complete.obs"))
+                  Value = cor(y, yhat, use = "pairwise.complete.obs"))
     } else if (m == "Class") {
       err <- pred_df %>%
         summarise(Metric = m,
