@@ -317,7 +317,9 @@ fitRF <- function(X, y, Xts = NULL, nfolds = 10, foldid = NULL, caret = FALSE,
   #   - ... = other arguments to feed into ranger()
   # 
   # returns: list of 4
-  #   - yhat_tr = vector of predicted responses using training data
+  #   - yhat_tr = vector of predicted responses using training data;
+  #       if caret = FALSE, this is the oob predictions; o/w this is the
+  #       training predictions
   #   - yhat_ts = vector of predicted responses using test data
   #   - fit = rf model fit; output of ranger()
   #   - imp = importance df, as measured by RF impurity score
@@ -343,18 +345,20 @@ fitRF <- function(X, y, Xts = NULL, nfolds = 10, foldid = NULL, caret = FALSE,
                   ...)
     
     # make predictions
+    oob_idx <- do.call(cbind, rf_out$fit$inbag.counts) == 0  # oob index
     yhat_ts <- NULL
     if (is.factor(y)) {
       yhat_tr <- predict(fit, as.data.frame(X), predict.all = TRUE,
-                         num.threads = 1)$predictions
-      yhat_tr <- rowMeans(yhat_tr) - 1
+                         num.threads = 1)$predictions - 1
+      yhat_tr <- rowSums(oob_idx * yhat_tr) / rowSums(oob_idx)
       if (!is.null(Xts)) {
         yhat_ts <- predict(fit, as.data.frame(Xts), predict.all = TRUE,
-                           num.threads = 1)$predictions
-        yhat_ts <- rowMeans(yhat_ts) - 1
+                           num.threads = 1)$predictions - 1
+        yhat_ts <- rowMeans(yhat_ts)
       }
     } else {
       yhat_tr <- predict(fit, as.data.frame(X), num.threads = 1)$predictions
+      yhat_tr <- rowSums(oob_idx * yhat_tr) / rowSums(oob_idx)
       if (!is.null(Xts)) {
         yhat_ts <- predict(fit, as.data.frame(Xts), num.threads = 1)$predictions
       }
