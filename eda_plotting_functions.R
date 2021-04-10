@@ -6,13 +6,14 @@ library(GGally)
 library(cowplot)
 library(dendextend)
 library(leaflet)
+library(ggdendro)
 
 source("./ggplot_themes.R")
 
 plotPairs <- function(data, columns, color = NULL, color2 = NULL, 
                       color.label = "", color2.label = "",
                       manual.color = NULL, manual.color2 = NULL,
-                      columnLabels = colnames(data[columns]), title = "",
+                      columnLabels = colnames(data[, columns]), title = "",
                       size = .5, alpha = .5, cor.text.size = 3.5, subsample = 1,
                       show.upper = T, drop = F, show.plot = F, ...) {
   ####### Function Description ########
@@ -20,7 +21,7 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
   #
   # inputs:
   # - data = data frame or data matrix
-  # - columns = vector of column indices to plot in pair plots
+  # - columns = vector of column indicies or names to plot in pair plots
   # - color = vector of class labels to use as colors for lower ggplot panels
   # - color2 = vector of class labels to use as colors for upper ggplot panels
   # - color.label = string for color legend title
@@ -65,6 +66,11 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
     uplt <- GGally::wrap("cor", size = cor.text.size)
   } else {
     uplt <- "blank"
+  }
+  
+  # get columns for plotting
+  if (!is.numeric(columns)) {
+    columns <- which(colnames(data) %in% columns)
   }
   
   if (is.null(color) & is.null(color2)) {  # no colors
@@ -574,6 +580,8 @@ plotPCA <- function(X, pca.out,
 }
 
 plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
+                        y.label.colors = NULL, x.label.colors = NULL,
+                        center = FALSE, scale = FALSE,
                         text.size = 0, theme = "default", position = "identity",
                         viridis = T, option = "C", 
                         col_quantile = F, n_quantiles = 5,
@@ -583,8 +591,12 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
   #
   # inputs:
   # - X = data matrix or data frame
-  # - y.labels = column names of X
-  # - x.labels = row names of X
+  # - y.labels = row/y labels in heatmap
+  # - x.labels = column/x labels in heatmap
+  # - y.label.colors = vector to use for coloring y axis text; optional
+  # - x.label.colors = vector to use for coloring x axis text; optional
+  # - center = logical; whether or not to center columns of X
+  # - scale = logical; whether or not to scale columns of X
   # - text.size = numeric; size of text on heatmap; no text if text.size = 0
   # - theme = "default" or "blank"
   # - position = "identity" or "ordered"
@@ -605,17 +617,25 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
   # plotHeatmap(df,  position = "identity")
   #######
   
+  if (!all(sapply(X, is.numeric))) {
+    stop("X must contain only numeric data. Please remove non-numeric columns.")
+  }
+  
+  # center/scale X if specified
+  if (center | scale) {
+    X <- scale(X, center = center, scale = scale)
+  }
+  
   # convert to long df to plot
   X_long <- as.data.frame(X) %>%
-    setNames(x.labels) %>%
-    mutate(y = factor(y.labels, levels = y.labels)) %>%
+    setNames(paste0("X", 1:ncol(X))) %>%
+    mutate(y = as.factor(1:nrow(X))) %>%
     gather(data = ., -y, key = "x", value = "fill") %>%
-    mutate(x = factor(x, levels = x.labels))
+    mutate(x = factor(x, levels = paste0("X", 1:ncol(X))))
   
   # base plot
   plt <- ggplot(X_long) +
-    aes(x = x, y = y, fill = fill) +
-    geom_tile() 
+    geom_tile(aes(x = x, y = y, fill = fill)) 
   
   # add text if specified
   if (text.size > 0) {
@@ -644,6 +664,10 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
           scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
                                midpoint = median(X_long$fill),
                                limit = c(min(X_long$fill), max(X_long$fill)))
+      } else if (manual.fill == "cor_temperature") {
+        plt <- plt + 
+          scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                               midpoint = 0, limit = c(-1, 1))
       } else {
         plt <- plt +
           scale_fill_manual(values = manual.fill)
@@ -671,14 +695,80 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
   # image position
   if (identical(position, "identity")) {
     plt <- plt +
-      scale_x_discrete(expand = c(0, 0)) +
-      scale_y_discrete(expand = c(0, 0), limits = rev(levels(X_long$y)))
+      scale_x_discrete(expand = c(0, 0), labels = x.labels) +
+      scale_y_discrete(expand = c(0, 0), 
+                       labels = y.labels,
+                       limits = rev(levels(X_long$y)))
   } else if (identical(position, "ordered")) {
     plt <- plt + 
-      scale_x_discrete(expand = c(0, 0)) +
-      scale_y_discrete(expand = c(0, 0))
+      scale_x_discrete(expand = c(0, 0), labels = x.labels) +
+      scale_y_discrete(expand = c(0, 0), labels = y.labels)
   } else {
     stop("Unknown position argument.")
+  }
+  
+  # add color to x and y axis text
+  if (!is.null(y.label.colors)) {
+    ylab_df <- data.frame(ylab_x = 1, ylab_y = 1, ylab_color = y.label.colors)
+    if (is.factor(y.label.colors)) {
+      if (nlevels(y.label.colors) <= 8) {
+        y_colors <- brewer.pal(n = 8, name = "Dark2")
+        y_colors[2] <- y_colors[1]
+        y_colors[1] <- "#FF9300"
+        ylab_colors <- y_colors[y.label.colors]
+      } else {
+        y_colors <- colorFactor(palette = "viridis", 
+                                domain = levels(y.label.colors))
+        ylab_colors <- y_colors(y.label.colors)
+      }
+      plt <- plt +
+        geom_point(aes(x = ylab_x, y = ylab_y, color = ylab_color), 
+                   data = ylab_df, size = -1) +
+        guides(color = guide_legend(override.aes = list(size = 3))) +
+        scale_color_manual(values = y_colors)
+    } else {
+      y_colors <- colorNumeric(palette = "viridis", 
+                               domain = c(min(y.label.colors), 
+                                          max(y.label.colors)))
+      ylab_colors <- y_colors(y.label.colors)
+      plt <- plt +
+        geom_point(aes(x = ylab_x, y = ylab_y, color = ylab_color), 
+                   data = ylab_df, size = -1) +
+        scale_colour_viridis(discrete = F)
+    }
+    plt <- plt +
+      theme(axis.text.y = element_text(color = ylab_colors))
+  }
+  if (!is.null(x.label.colors)) {
+    xlab_df <- data.frame(xlab_x = 1, xlab_y = 1, xlab_color = x.label.colors)
+    if (is.factor(x.label.colors)) {
+      if (nlevels(x.label.colors) <= 8) {
+        x_colors <- brewer.pal(n = 8, name = "Dark2")
+        x_colors[2] <- x_colors[1]
+        x_colors[1] <- "#FF9300"
+        xlab_colors <- x_colors[x.label.colors]
+      } else {
+        x_colors <- colorFactor(palette = "viridis", 
+                                domain = levels(x.label.colors))
+        xlab_colors <- x_colors(x.label.colors)
+      }
+      plt <- plt +
+        geom_point(aes(x = xlab_x, y = xlab_y, color = xlab_color), 
+                   data = xlab_df, size = -1) +
+        guides(color = guide_legend(override.aes = list(size = 3))) +
+        scale_color_manual(values = x_colors)
+    } else {
+      x_colors <- colorNumeric(palette = "viridis", 
+                               domain = c(min(x.label.colors), 
+                                          max(x.label.colors)))
+      xlab_colors <- x_colors(x.label.colors)
+      plt <- plt +
+        geom_point(aes(x = xlab_x, y = xlab_y, color = xlab_color), 
+                   data = xlab_df, size = -1) +
+        scale_colour_viridis(discrete = F)
+    }
+    plt <- plt +
+      theme(axis.text.x = element_text(color = xlab_colors))
   }
   
   if (show.plot) {
@@ -688,9 +778,185 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
   return(plt)
 }
 
-plotHclust <- function(data, y = NULL,
-                       dist.metric = "euclidean", linkage = "ward.D",
-                       show.y.text = T, text.size = 0.5, show.plt = F,
+plotHclustHeatmap <- function(X, 
+                              y.labels = rownames(X), x.labels = colnames(X),
+                              y.label.colors = NULL, x.label.colors = NULL,
+                              clust.x = TRUE, clust.y = TRUE,
+                              dist.metric.x = "euclidean",
+                              dist.metric.y = "euclidean",
+                              dist.mat.x = NULL, dist.mat.y = NULL,
+                              linkage.x = "ward.D", linkage.y = "ward.D",
+                              center = FALSE, scale = FALSE,
+                              text.size = 0, theme = "default",
+                              viridis = T, option = "C", 
+                              col_quantile = F, n_quantiles = 5,
+                              manual.fill = NULL, show.plot = F, ...) {
+  ####### Function Description ########
+  # plot clustered heatmap of X
+  #
+  # inputs:
+  # - X = data matrix or data frame
+  # - y.labels = row/y labels in heatmap
+  # - x.labels = column/x labels in heatmap
+  # - y.label.colors = vector to use for coloring y axis text; optional
+  # - x.label.colors = vector to use for coloring x axis text; optional
+  # - clust.x = logical; whether or not to cluster columns
+  # - clust.y = logical; whether or not to cluster rows
+  # - dist.metric.x = distance metric for clustering columns (see stats::dist)
+  # - dist.metric.y = distance metric for clustering rows (see stats::dist)
+  # - dist.mat.x = distance matrix for clustering columns (optional); must 
+  #     provide either dist.metric or dist.mat
+  # - dist.mat.y = distance matrix for clustering rows (optional); must provide 
+  #     either dist.metric or dist.mat
+  # - linkage.x = type of linkage for clustering columns (see stats::hclust)
+  # - linkage.y = type of linkage for clustering rows (see stats::hclust)
+  # - center = logical; whether or not to center columns of X
+  # - scale = logical; whether or not to scale columns of X
+  # - text.size = numeric; size of text on heatmap; no text if text.size = 0
+  # - theme = "default" or "blank"
+  # - position = "identity" or "ordered"
+  # - viridis = logical; whether or not to use viridis color scheme
+  # - option = viridis option argument
+  # - col_quantile = logical; whether or not to use quantile color scale
+  # - n_quantiles = number of quantiles for color scheme; only used if
+  #     col_quantile = T
+  # - manual.fill = "temperature" or vector of colors for the color scale
+  #     (optional)
+  # - show.plot = logical; whether or not to print plot
+  # - ... = additional arguments to pass to myGGplotTheme()
+  #
+  # outputs: a ggplot object
+  # 
+  # example usage:
+  # df <- as.data.frame(matrix(1:100, nrow = 10, byrow = 10))
+  # plotHclustHeatmap(df)
+  #######
+  
+  if (!all(sapply(X, is.numeric))) {
+    stop("X must contain only numeric data. Please remove non-numeric columns.")
+  }
+  if (any(is.na(data))) {
+    stop("NAs found in data. Please remove NAs.")
+  }
+  
+  # center/scale X if specified
+  if (center | scale) {
+    X <- scale(X, center = center, scale = scale)
+  }
+  
+  # cluster columns
+  if (clust.x) {
+    if (is.null(dist.mat.x)) {
+      Dmat.x <- dist(t(X), method = dist.metric.x)
+    } else {
+      if (!("dist" %in% class(dist.mat.x))) {
+        Dmat.x <- as.dist(dist.mat.x)
+      } else {
+        Dmat.x <- dist.mat.x
+      }
+    }
+    hclust_out_x <- hclust(Dmat.x, method = linkage.x)
+    order_x <- hclust_out_x$order
+    X <- X[, order_x]
+  }
+  
+  # cluster rows
+  if (clust.y) {
+    if (is.null(dist.mat.y)) {
+      Dmat.y <- dist(X, method = dist.metric.y)
+    } else {
+      if (!("dist" %in% class(dist.mat.y))) {
+        Dmat.y <- as.dist(dist.mat.y)
+      } else {
+        Dmat.y <- dist.mat.y
+      }
+    }
+    hclust_out_y <- hclust(Dmat.y, method = linkage.y)
+    order_y <- hclust_out_y$order
+    X <- X[order_y, ]
+  } 
+  
+  plt <- plotHeatmap(X = X, y.labels = y.labels, x.labels = x.labels, 
+                     y.label.colors = y.label.colors, 
+                     x.label.colors = x.label.colors,
+                     text.size = text.size, theme = theme, 
+                     position = "identity", viridis = viridis, option = option, 
+                     col_quantile = col_quantile, n_quantiles = n_quantiles, 
+                     manual.fill = manual.fill, show.plot = show.plot, ...)
+  
+  return(plt)
+}
+
+plotCorHeatmap <- function(X, cor.type = "pearson",
+                           axis.labels = colnames(X), axis.label.colors = NULL,
+                           clust = TRUE, linkage = "ward.D",
+                           text.size = 0, theme = "default",
+                           viridis = T, option = "C", 
+                           col_quantile = F, n_quantiles = 5,
+                           manual.fill = "cor_temperature", show.plot = F, 
+                           ...) {
+  ####### Function Description ########
+  # plot (clustered) correlation heatmap of X
+  #
+  # inputs:
+  # - X = data matrix or data frame
+  # - cor.type = correlation metric; one of "pearson", "kendall", or "spearman"
+  # - axis.labels = axis text labels in heatmap
+  # - axis.label.colors = vector to use for coloring axis text labels; optional
+  # - clust = logical; whether or not to cluster columns and rows
+  # - linkage = type of linkage for clustering (see stats::hclust)
+  # - text.size = numeric; size of text on heatmap; no text if text.size = 0
+  # - theme = "default" or "blank"
+  # - position = "identity" or "ordered"
+  # - viridis = logical; whether or not to use viridis color scheme
+  # - option = viridis option argument
+  # - col_quantile = logical; whether or not to use quantile color scale
+  # - n_quantiles = number of quantiles for color scheme; only used if
+  #     col_quantile = T
+  # - manual.fill = "temperature" or vector of colors for the color scale
+  #     (optional)
+  # - show.plot = logical; whether or not to print plot
+  # - ... = additional arguments to pass to myGGplotTheme()
+  #
+  # outputs: a ggplot object
+  # 
+  # example usage:
+  # df <- as.data.frame(matrix(1:100, nrow = 10, byrow = 10))
+  # plotCorHeatmap(df)
+  #######
+  
+  if (!all(sapply(X, is.numeric))) {
+    stop("X must contain only numeric data. Please remove non-numeric columns.")
+  }
+  
+  cor_mat <- cor(X, method = cor.type, use = "pairwise.complete.obs")
+  cor_dist <- as.dist(1 - abs(cor_mat))
+  
+  # cluster
+  if (clust) {
+    hclust_out <- hclust(cor_dist, method = linkage)
+    cor_mat <- cor_mat[hclust_out$order, hclust_out$order]
+  }
+  
+  cor_mat <- round(cor_mat, 2)
+  
+  plt <- plotHeatmap(X = cor_mat, 
+                     y.labels = axis.labels, x.labels = axis.labels, 
+                     y.label.colors = axis.label.colors, 
+                     x.label.colors = axis.label.colors,
+                     text.size = text.size, theme = theme, 
+                     position = "identity", viridis = viridis, option = option, 
+                     col_quantile = col_quantile, n_quantiles = n_quantiles, 
+                     manual.fill = manual.fill, show.plot = show.plot, ...)
+  
+  return(plt)
+}
+
+plotHclust <- function(data, 
+                       leaf_labels = rownames(data), leaf_colors = NULL, 
+                       dist.metric = "euclidean", dist.mat = NULL, 
+                       linkage = "ward.D",
+                       text.size = 10, show.plt = F,
                        title = NULL, manual.color = NULL, 
                        save = F, save.filename = NULL) {
   ####### Function Description ########
@@ -698,10 +964,12 @@ plotHclust <- function(data, y = NULL,
   # 
   # inputs:
   # - data = data matrix or data frame
-  # - y = class labels or outcome (optional)
+  # - leaf_labels = labels for leaf nodes (e.g., class/outcome labels); optional
+  # - leaf_colors = vector to use for coloring leaf nodes; optional
   # - dist.metric = distance metric (see stats::dist)
+  # - dist.mat = distance matrix (optional); must provide either dist.metric or
+  #     dist.mat
   # - linkage = type of linkage for hierarchical clustering (see stats::hclust)
-  # - show.y.text = logical; whether or not to print y text or just the color
   # - text.size = size of text for leaves
   # - title = string for plot title name
   # - manual.color = vector of manual colors for leaf text labels
@@ -709,9 +977,10 @@ plotHclust <- function(data, y = NULL,
   # - save = logical; whether or not to save plot as rds file
   # - save.filename = string ending in .rds; where to save file
   # 
-  # output: list of 2
+  # output: list of 3
+  # - plt = dendrogram plot; ggplot object
   # - hclust = output of hclust()
-  # - dend = hierarchical clustering dendrogram
+  # - dend = hierarchical clustering dendrogram data
   #
   # example usage:
   # out <- plotHclust(data = iris[, -5], y = iris$Species, show.plt = T)
@@ -725,56 +994,100 @@ plotHclust <- function(data, y = NULL,
   }
   
   # distance matrix
-  Dmat <- dist(data, method = dist.metric)
+  if (is.null(dist.mat)) {
+    Dmat <- dist(data, method = dist.metric)
+  } else {
+    if (!("dist" %in% class(dist.mat))) {
+      Dmat <- as.dist(dist.mat)
+    } else {
+      Dmat <- dist.mat
+    }
+  }
   
   # hierarchical clustering
   hclust_out <- hclust(Dmat, method = linkage)
   hclust_dend <- as.dendrogram(hclust_out)
   
-  if (!is.null(y)) {  # annotate tree leaves
-    
-    if (is.factor(y)) {  # categorical y
+  if (!is.null(leaf_colors)) {  # annotate tree leaves
+    # color leaf labels
+    if (is.factor(leaf_colors)) {  # categorical leaf_colors
       if (is.null(manual.color)) {
-        my_colors <- 1:length(unique(y))
+        if (nlevels(leaf_colors) <= 8) {
+          my_colors <- brewer.pal(n = 8, name = "Dark2")
+          my_colors[2] <- my_colors[1]
+          my_colors[1] <- "#FF9300"
+          lab_colors <- my_colors[leaf_colors][order.dendrogram(hclust_dend)]
+        } else {
+          my_colors <- colorFactor(palette = "viridis", 
+                                   domain = levels(leaf_colors))
+          lab_colors <- my_colors(leaf_colors)[order.dendrogram(hclust_dend)]
+        }
+      } else {
+        lab_colors <- manual.color[leaf_colors][order.dendrogram(hclust_dend)]
+      }
+    } else {  # continuous leaf_colors
+      if (is.null(manual.color)) {
+        my_colors <- colorNumeric(palette = "viridis", 
+                                  domain = c(min(leaf_colors), 
+                                             max(leaf_colors)))
+        lab_colors <- my_colors(leaf_colors)[order.dendrogram(hclust_dend)]
       } else {
         my_colors <- manual.color
+        lab_colors <- my_colors[leaf_colors][order.dendrogram(hclust_dend)]
       }
-      labels_colors(hclust_dend) <- my_colors[y][order.dendrogram(hclust_dend)]
-    } else {  # continuous y
-      if (is.null(manual.color)) {
-        my_colors <- colorNumeric(palette = "viridis", domain = c(min(y), max(y)))
-      } else {
-        my_colors <- manual.color
-      }
-      labels_colors(hclust_dend) <- my_colors(y)[order.dendrogram(hclust_dend)]
     }
     
-    labels(hclust_dend) <- as.character(y)[order.dendrogram(hclust_dend)]
-    dend_colors <- labels_colors(hclust_dend)
-    if (!show.y.text) {
-      labels(hclust_dend) <- "------"
-    }
-    
-    hclust_dend <- hang.dendrogram(hclust_dend, hang_height = 0.1)
-    hclust_dend <- assign_values_to_leaves_nodePar(hclust_dend, 
-                                                   text.size, "lab.cex")
+    lab_df <- data.frame(x = rep(0, nrow(data)),
+                         y = rep(0, nrow(data)),
+                         color = leaf_colors)
+  } else {
+    lab_colors <- "black"
+  }
+  
+  # get leaf labels
+  if (is.null(leaf_labels)) {
+    labels(hclust_dend) <- rep("------", length(labels(hclust_dend)))
+  } else {
+    labels(hclust_dend) <- leaf_labels
   }
   
   if (is.null(title)) {
     title <- paste0(
-      "Hierarchical Clustering: \n",
+      "Hierarchical Clustering: ",
       linkage, " Linkage, ", dist.metric, " Distance"
     )
   }
-
-  if (show.plt) {
-    plot(hclust_dend, main = title, horiz = FALSE)
-    if (!is.null(y)) {
-      if (is.factor(y)) {
-        legend("topright", legend = levels(y), col = my_colors,
-               lwd = 1, bty = "n", cex = 0.8)
-      }
+  
+  # convert to ggplot object
+  hclust_dend <- dendro_data(hclust_dend)
+  hclust_plt <- suppressWarnings(
+    suppressMessages(
+      ggdendrogram(hclust_dend) +
+        labs(title = title, color = "Label") +
+        scale_y_continuous(expand = c(0, 0)) +
+        scale_x_continuous(breaks = seq_along(hclust_dend$labels$label),
+                           labels = hclust_dend$labels$label,
+                           expand = c(0, 0)) +
+        theme(axis.text.y = element_blank(),
+              axis.text.x = element_text(color = lab_colors, 
+                                         size = text.size))
+    )
+  )
+  if (!is.null(leaf_colors)) {  # add legend
+    if (is.factor(leaf_colors)) {
+      hclust_plt <- hclust_plt +
+        geom_point(aes(x = x, y = y, color = color), data = lab_df, size = -1) +
+        guides(color = guide_legend(override.aes = list(size = 3))) +
+        scale_color_manual(values = my_colors)
+    } else {
+      hclust_plt <- hclust_plt +
+        geom_point(aes(x = x, y = y, color = color), data = lab_df, size = -1) +
+        scale_colour_viridis(discrete = F)
     }
+  }
+  
+  if (show.plt) {
+    print(hclust_plt)
   }
   
   if (save) { # save figure to file
@@ -785,6 +1098,5 @@ plotHclust <- function(data, y = NULL,
     }
   }
   
-  return(list(hclust = hclust_out, dend = hclust_dend, 
-              dend_colors = dend_colors))
+  return(list(plt = hclust_plt, hclust = hclust_out, dend = hclust_dend))
 }
