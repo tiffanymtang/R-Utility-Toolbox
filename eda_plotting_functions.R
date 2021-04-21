@@ -272,7 +272,7 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
       }
       if (is.null(manual.color2)) {
         legend_plt2 <- legend_plt2 +
-          myGGplotColor(color = color2, option = "D", viridis = T, drop = drop)
+          myGGplotColor(color = color2, option = "C", viridis = T, drop = drop)
       } else {
         legend_plt2 <- legend_plt2 +
           scale_color_manual(values = manual.color2, drop = drop)
@@ -346,7 +346,7 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
               } else {
                 if (is.null(manual.color2)) {
                   plt[i, j] <- plt[i, j] +
-                    myGGplotFill(fill = color2, option = "D", viridis = T,
+                    myGGplotFill(fill = color2, option = "C", viridis = T,
                                  drop = drop)
                 } else {
                   plt[i, j] <- plt[i, j] +
@@ -376,7 +376,7 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
               } else {
                 if (is.null(manual.color2)) {
                   plt[i, j] <- plt[i, j] +
-                    myGGplotColor(color = color2, option = "D", viridis = T,
+                    myGGplotColor(color = color2, option = "C", viridis = T,
                                   drop = drop)
                 } else {
                   plt[i, j] <- plt[i, j] +
@@ -580,10 +580,11 @@ plotPCA <- function(X, pca.out,
 }
 
 plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
+                        y.labels.num = FALSE, x.labels.num = FALSE,
                         y.label.colors = NULL, x.label.colors = NULL,
-                        center = FALSE, scale = FALSE,
+                        center = FALSE, scale = FALSE, 
                         text.size = 0, theme = "default", position = "identity",
-                        viridis = T, option = "C", 
+                        size = 0, viridis = T, option = "C", 
                         col_quantile = F, n_quantiles = 5,
                         manual.fill = NULL, show.plot = F, ...) {
   ####### Function Description ########
@@ -593,6 +594,8 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
   # - X = data matrix or data frame
   # - y.labels = row/y labels in heatmap
   # - x.labels = column/x labels in heatmap
+  # - y.labels.num = logical; whether or not y labels are numeric/continuous
+  # - x.labels.num = logical; whether or not x labels are numeric/continuous
   # - y.label.colors = vector to use for coloring y axis text; optional
   # - x.label.colors = vector to use for coloring x axis text; optional
   # - center = logical; whether or not to center columns of X
@@ -600,6 +603,8 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
   # - text.size = numeric; size of text on heatmap; no text if text.size = 0
   # - theme = "default" or "blank"
   # - position = "identity" or "ordered"
+  # - size = size argument in geom_tile() to avoid white lines in continuous
+  #     heatmap
   # - viridis = logical; whether or not to use viridis color scheme
   # - option = viridis option argument
   # - col_quantile = logical; whether or not to use quantile color scale
@@ -621,21 +626,53 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
     stop("X must contain only numeric data. Please remove non-numeric columns.")
   }
   
+  y.labels = y.labels
+  x.labels = x.labels
+  y.label.colors = y.label.colors
+  x.label.colors = x.label.colors
+
   # center/scale X if specified
   if (center | scale) {
     X <- scale(X, center = center, scale = scale)
   }
   
   # convert to long df to plot
-  X_long <- as.data.frame(X) %>%
-    setNames(paste0("X", 1:ncol(X))) %>%
-    mutate(y = as.factor(1:nrow(X))) %>%
-    gather(data = ., -y, key = "x", value = "fill") %>%
-    mutate(x = factor(x, levels = paste0("X", 1:ncol(X))))
+  X_long <- as.data.frame(X)
+  if (!x.labels.num & !y.labels.num) {
+    X_long <- as.data.frame(X) %>%
+      setNames(paste0("X", 1:ncol(X))) %>%
+      mutate(y = as.factor(1:nrow(X))) %>%
+      gather(data = ., -y, key = "x", value = "fill") %>%
+      mutate(x = factor(x, levels = paste0("X", 1:ncol(X))))
+  } else if (!x.labels.num) {
+    X_long <- as.data.frame(X) %>%
+      setNames(paste0("X", 1:ncol(X))) %>%
+      mutate(y = y.labels) %>%
+      gather(data = ., -y, key = "x", value = "fill") %>%
+      mutate(x = factor(x, levels = paste0("X", 1:ncol(X))))
+  } else if (!y.labels.num) {
+    X_long <- as.data.frame(X) %>%
+      setNames(x.labels) %>%
+      mutate(y = as.factor(1:nrow(X))) %>%
+      gather(data = ., -y, key = "x", value = "fill") %>%
+      mutate(x = as.numeric(x))
+  } else {
+    X_long <- as.data.frame(X) %>%
+      setNames(x.labels) %>%
+      mutate(y = as.numeric(y.labels)) %>%
+      gather(data = ., -y, key = "x", value = "fill") %>%
+      mutate(x = as.numeric(x))
+  }
   
   # base plot
-  plt <- ggplot(X_long) +
-    geom_tile(aes(x = x, y = y, fill = fill)) 
+  if (x.labels.num | y.labels.num) {
+    plt <- ggplot(X_long) +
+      geom_tile(aes(x = x, y = y, fill = fill, color = fill), size = size) +
+      guides(color = FALSE)
+  } else {
+    plt <- ggplot(X_long) +
+      geom_tile(aes(x = x, y = y, fill = fill))
+  }
   
   # add text if specified
   if (text.size > 0) {
@@ -657,20 +694,27 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
   if (!col_quantile | is.factor(X_long$fill)) {
     if (is.null(manual.fill)) {
       plt <- plt +
-        myGGplotFill(fill = fill, viridis = viridis, option = option)
+        myGGplotFill(fill = fill, viridis = viridis, option = option) +
+        myGGplotColor(color = fill, viridis = viridis, option = option)
     } else {
       if (manual.fill == "temperature") {
         plt <- plt + 
           scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
                                midpoint = median(X_long$fill),
-                               limit = c(min(X_long$fill), max(X_long$fill)))
+                               limit = c(min(X_long$fill), max(X_long$fill))) +
+          scale_color_gradient2(low = "blue", high = "red", mid = "white",
+                                midpoint = median(X_long$fill),
+                                limit = c(min(X_long$fill), max(X_long$fill)))
       } else if (manual.fill == "cor_temperature") {
         plt <- plt + 
           scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
-                               midpoint = 0, limit = c(-1, 1))
+                               midpoint = 0, limit = c(-1, 1)) +
+          scale_color_gradient2(low = "blue", high = "red", mid = "white", 
+                                midpoint = 0, limit = c(-1, 1))
       } else {
         plt <- plt +
-          scale_fill_manual(values = manual.fill)
+          scale_fill_manual(values = manual.fill) +
+          scale_color_manual(values = manual.fill)
       }
     }
   } else {
@@ -688,21 +732,43 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
     heat_pal_values <- (quantiles - min(quantiles)) /
       (max(quantiles) - min(quantiles))
     plt <- plt + 
-      scale_fill_gradientn(values = heat_pal_values,
-                           colors  = heat_pal)
+      scale_fill_gradientn(values = heat_pal_values, colors  = heat_pal) +
+      scale_color_gradientn(values = heat_pal_values, colors = heat_pal)
   }
   
   # image position
   if (identical(position, "identity")) {
-    plt <- plt +
-      scale_x_discrete(expand = c(0, 0), labels = x.labels) +
-      scale_y_discrete(expand = c(0, 0), 
-                       labels = y.labels,
-                       limits = rev(levels(X_long$y)))
+    if (!x.labels.num) {
+      plt <- plt + 
+        scale_x_discrete(expand = c(0, 0), labels = x.labels)
+    } else {
+      plt <- plt + 
+        scale_x_continuous(expand = c(0, 0))
+    }
+    if (!y.labels.num) {
+      plt <- plt + 
+        scale_y_discrete(expand = c(0, 0), 
+                         labels = y.labels,
+                         limits = rev(levels(X_long$y)))
+    } else {
+      plt <- plt +
+        scale_y_continuous(expand = c(0, 0))
+    }
   } else if (identical(position, "ordered")) {
-    plt <- plt + 
-      scale_x_discrete(expand = c(0, 0), labels = x.labels) +
-      scale_y_discrete(expand = c(0, 0), labels = y.labels)
+    if (!x.labels.num) {
+      plt <- plt + 
+        scale_x_discrete(expand = c(0, 0), labels = x.labels)
+    } else {
+      plt <- plt + 
+        scale_x_continuous(expand = c(0, 0))
+    }
+    if (!y.labels.num) {
+      plt <- plt + 
+        scale_y_discrete(expand = c(0, 0), labels = y.labels)
+    } else {
+      plt <- plt +
+        scale_y_continuous(expand = c(0, 0))
+    }
   } else {
     stop("Unknown position argument.")
   }
@@ -780,6 +846,7 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
 
 plotHclustHeatmap <- function(X, 
                               y.labels = rownames(X), x.labels = colnames(X),
+                              y.labels.num = FALSE, x.labels.num = FALSE,
                               y.label.colors = NULL, x.label.colors = NULL,
                               clust.x = TRUE, clust.y = TRUE,
                               dist.metric.x = "euclidean",
@@ -787,7 +854,7 @@ plotHclustHeatmap <- function(X,
                               dist.mat.x = NULL, dist.mat.y = NULL,
                               linkage.x = "ward.D", linkage.y = "ward.D",
                               center = FALSE, scale = FALSE,
-                              text.size = 0, theme = "default",
+                              text.size = 0, theme = "default", size = 0,
                               viridis = T, option = "C", 
                               col_quantile = F, n_quantiles = 5,
                               manual.fill = NULL, show.plot = F, ...) {
@@ -798,6 +865,8 @@ plotHclustHeatmap <- function(X,
   # - X = data matrix or data frame
   # - y.labels = row/y labels in heatmap
   # - x.labels = column/x labels in heatmap
+  # - y.labels.num = logical; whether or not y labels are numeric/continuous
+  # - x.labels.num = logical; whether or not x labels are numeric/continuous
   # - y.label.colors = vector to use for coloring y axis text; optional
   # - x.label.colors = vector to use for coloring x axis text; optional
   # - clust.x = logical; whether or not to cluster columns
@@ -814,7 +883,8 @@ plotHclustHeatmap <- function(X,
   # - scale = logical; whether or not to scale columns of X
   # - text.size = numeric; size of text on heatmap; no text if text.size = 0
   # - theme = "default" or "blank"
-  # - position = "identity" or "ordered"
+  # - size = size argument in geom_tile() to avoid white lines in continuous
+  #     heatmap
   # - viridis = logical; whether or not to use viridis color scheme
   # - option = viridis option argument
   # - col_quantile = logical; whether or not to use quantile color scale
@@ -839,6 +909,11 @@ plotHclustHeatmap <- function(X,
     stop("NAs found in data. Please remove NAs.")
   }
   
+  y.labels <- y.labels
+  x.labels <- x.labels
+  y.label.colors <- y.label.colors
+  x.label.colors <- x.label.colors
+  
   # center/scale X if specified
   if (center | scale) {
     X <- scale(X, center = center, scale = scale)
@@ -858,6 +933,10 @@ plotHclustHeatmap <- function(X,
     hclust_out_x <- hclust(Dmat.x, method = linkage.x)
     order_x <- hclust_out_x$order
     X <- X[, order_x]
+    x.labels <- x.labels[order_x]
+    if (!is.null(x.label.colors)) {
+      x.label.colors <- x.label.colors[order_x]
+    }
   }
   
   # cluster rows
@@ -874,13 +953,19 @@ plotHclustHeatmap <- function(X,
     hclust_out_y <- hclust(Dmat.y, method = linkage.y)
     order_y <- hclust_out_y$order
     X <- X[order_y, ]
+    y.labels <- y.labels[order_y]
+    if (!is.null(y.label.colors)) {
+      y.label.colors <- y.label.colors[order_y]
+    }
   } 
   
   plt <- plotHeatmap(X = X, y.labels = y.labels, x.labels = x.labels, 
+                     y.labels.num = y.labels.num, x.labels.num = x.labels.num,
                      y.label.colors = y.label.colors, 
                      x.label.colors = x.label.colors,
                      text.size = text.size, theme = theme, 
-                     position = "identity", viridis = viridis, option = option, 
+                     position = "identity", size = size,
+                     viridis = viridis, option = option, 
                      col_quantile = col_quantile, n_quantiles = n_quantiles, 
                      manual.fill = manual.fill, show.plot = show.plot, ...)
   
@@ -929,6 +1014,9 @@ plotCorHeatmap <- function(X, cor.type = "pearson",
     stop("X must contain only numeric data. Please remove non-numeric columns.")
   }
   
+  axis.labels = axis.labels
+  axis.label.colors = axis.label.colors
+
   cor_mat <- cor(X, method = cor.type, use = "pairwise.complete.obs")
   cor_dist <- as.dist(1 - abs(cor_mat))
   
