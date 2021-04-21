@@ -935,7 +935,7 @@ plotHclustHeatmap <- function(X,
   if (!all(sapply(X, is.numeric))) {
     stop("X must contain only numeric data. Please remove non-numeric columns.")
   }
-  if (any(is.na(data))) {
+  if (any(is.na(X))) {
     stop("NAs found in data. Please remove NAs.")
   }
   
@@ -964,13 +964,15 @@ plotHclustHeatmap <- function(X,
       hclust_out_x <- hclust(Dmat.x, method = linkage.x)
       order_x <- hclust_out_x$order
     } else {
-      order_x <- rep(NA, ncol(X))
+      order_x <- c()
       for (group in unique(x.groups)) {
         group.idx <- x.groups == group
         Dmat.x.sub <- as.dist(as.matrix(Dmat.x)[group.idx, group.idx])
         hclust_out_x <- hclust(Dmat.x.sub, method = linkage.x)
-        order_x[group.idx] <- hclust_out_x$order + sum(!is.na(order_x))
+        col_idx <- data.frame(idx = 1:sum(group.idx), col = which(group.idx))
+        order_x <- c(order_x, col_idx$col[match(hclust_out_x$order, col_idx$idx)])
       }
+      x.groups <- x.groups[order_x]
     }
     X <- X[, order_x]
     x.labels <- x.labels[order_x]
@@ -994,13 +996,15 @@ plotHclustHeatmap <- function(X,
       hclust_out_y <- hclust(Dmat.y, method = linkage.y)
       order_y <- hclust_out_y$order
     } else {
-      order_y <- rep(NA, nrow(X))
+      order_y <- c()
       for (group in unique(y.groups)) {
         group.idx <- y.groups == group
         Dmat.y.sub <- as.dist(as.matrix(Dmat.y)[group.idx, group.idx])
         hclust_out_y <- hclust(Dmat.y.sub, method = linkage.y)
-        order_y[group.idx] <- hclust_out_y$order + sum(!is.na(order_y))
+        col_idx <- data.frame(idx = 1:sum(group.idx), col = which(group.idx))
+        order_y <- c(order_y, col_idx$col[match(hclust_out_y$order, col_idx$idx)])
       }
+      y.groups <- y.groups[order_y]
     }
     X <- X[order_y, ]
     y.labels <- y.labels[order_y]
@@ -1018,7 +1022,7 @@ plotHclustHeatmap <- function(X,
                      position = "identity", size = size,
                      viridis = viridis, option = option, 
                      col_quantile = col_quantile, n_quantiles = n_quantiles, 
-                     manual.fill = manual.fill, show.plot = show.plot, ...)
+                     manual.fill = manual.fill, show.plot = show.plot)
   return(plt)
 }
 
