@@ -582,6 +582,7 @@ plotPCA <- function(X, pca.out,
 plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
                         y.labels.num = FALSE, x.labels.num = FALSE,
                         y.label.colors = NULL, x.label.colors = NULL,
+                        y.groups = NULL, x.groups = NULL,
                         center = FALSE, scale = FALSE, 
                         text.size = 0, theme = "default", position = "identity",
                         size = 0, viridis = T, option = "C", 
@@ -598,6 +599,8 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
   # - x.labels.num = logical; whether or not x labels are numeric/continuous
   # - y.label.colors = vector to use for coloring y axis text; optional
   # - x.label.colors = vector to use for coloring x axis text; optional
+  # - y.groups = vector of groups for rows/y
+  # - x.groups = vector of groups for columns/x
   # - center = logical; whether or not to center columns of X
   # - scale = logical; whether or not to scale columns of X
   # - text.size = numeric; size of text on heatmap; no text if text.size = 0
@@ -626,11 +629,15 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
     stop("X must contain only numeric data. Please remove non-numeric columns.")
   }
   
-  y.labels = y.labels
-  x.labels = x.labels
-  y.label.colors = y.label.colors
-  x.label.colors = x.label.colors
+  y.labels <- y.labels
+  x.labels <- x.labels
+  y.label.colors <- y.label.colors
+  x.label.colors <- x.label.colors
 
+  if (any(duplicated(y.labels)) | any(duplicated(x.labels))) {
+    stop("x.labels and y.labels cannot contain duplicates.")
+  }
+  
   # center/scale X if specified
   if (center | scale) {
     X <- scale(X, center = center, scale = scale)
@@ -640,20 +647,20 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
   X_long <- as.data.frame(X)
   if (!x.labels.num & !y.labels.num) {
     X_long <- as.data.frame(X) %>%
-      setNames(paste0("X", 1:ncol(X))) %>%
-      mutate(y = as.factor(1:nrow(X))) %>%
+      setNames(x.labels) %>%
+      mutate(y = fct_rev(fct_inorder(y.labels))) %>%
       gather(data = ., -y, key = "x", value = "fill") %>%
-      mutate(x = factor(x, levels = paste0("X", 1:ncol(X))))
+      mutate(x = factor(x, levels = x.labels))
   } else if (!x.labels.num) {
     X_long <- as.data.frame(X) %>%
-      setNames(paste0("X", 1:ncol(X))) %>%
+      setNames(x.labels) %>%
       mutate(y = y.labels) %>%
       gather(data = ., -y, key = "x", value = "fill") %>%
-      mutate(x = factor(x, levels = paste0("X", 1:ncol(X))))
+      mutate(x = factor(x, levels = x.labels))
   } else if (!y.labels.num) {
     X_long <- as.data.frame(X) %>%
       setNames(x.labels) %>%
-      mutate(y = as.factor(1:nrow(X))) %>%
+      mutate(y = fct_rev(fct_inorder(y.labels))) %>%
       gather(data = ., -y, key = "x", value = "fill") %>%
       mutate(x = as.numeric(x))
   } else {
@@ -664,6 +671,13 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
       mutate(x = as.numeric(x))
   }
   
+  if (!is.null(x.groups)) {
+    X_long$x.group <- x.groups[X_long$x]
+  }
+  if (!is.null(y.groups)) {
+    X_long$y.group <- y.groups[X_long$y]
+  }
+  
   # base plot
   if (x.labels.num | y.labels.num) {
     plt <- ggplot(X_long) +
@@ -672,6 +686,23 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
   } else {
     plt <- ggplot(X_long) +
       geom_tile(aes(x = x, y = y, fill = fill))
+  }
+  
+  if (!is.null(x.groups) & !is.null(y.groups)) {
+    plt <- plt +
+      facet_grid(y.group ~ x.group, space = "free", scales = "free") +
+      theme(panel.spacing = unit(0, "lines"),
+            panel.border = element_rect(color = "black", fill = NA, size = 1))
+  } else if (!is.null(x.groups)) {
+    plt <- plt +
+      facet_grid(~ x.group, space = "free", scales = "free") +
+      theme(panel.spacing = unit(0, "lines"),
+            panel.border = element_rect(color = "black", fill = NA, size = 1))
+  } else if (!is.null(y.groups)) {
+    plt <- plt +
+      facet_grid(y.group ~., space = "free", scales = "free") +
+      theme(panel.spacing = unit(0, "lines"),
+            panel.border = element_rect(color = "black", fill = NA, size = 1))
   }
   
   # add text if specified
@@ -740,16 +771,14 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
   if (identical(position, "identity")) {
     if (!x.labels.num) {
       plt <- plt + 
-        scale_x_discrete(expand = c(0, 0), labels = x.labels)
+        scale_x_discrete(expand = c(0, 0))
     } else {
       plt <- plt + 
         scale_x_continuous(expand = c(0, 0))
     }
     if (!y.labels.num) {
       plt <- plt + 
-        scale_y_discrete(expand = c(0, 0), 
-                         labels = y.labels,
-                         limits = rev(levels(X_long$y)))
+        scale_y_discrete(expand = c(0, 0))
     } else {
       plt <- plt +
         scale_y_continuous(expand = c(0, 0))
@@ -757,14 +786,14 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
   } else if (identical(position, "ordered")) {
     if (!x.labels.num) {
       plt <- plt + 
-        scale_x_discrete(expand = c(0, 0), labels = x.labels)
+        scale_x_discrete(expand = c(0, 0))
     } else {
       plt <- plt + 
         scale_x_continuous(expand = c(0, 0))
     }
     if (!y.labels.num) {
       plt <- plt + 
-        scale_y_discrete(expand = c(0, 0), labels = y.labels)
+        scale_y_discrete(expand = c(0, 0))
     } else {
       plt <- plt +
         scale_y_continuous(expand = c(0, 0))
@@ -848,6 +877,7 @@ plotHclustHeatmap <- function(X,
                               y.labels = rownames(X), x.labels = colnames(X),
                               y.labels.num = FALSE, x.labels.num = FALSE,
                               y.label.colors = NULL, x.label.colors = NULL,
+                              y.groups = NULL, x.groups = NULL,
                               clust.x = TRUE, clust.y = TRUE,
                               dist.metric.x = "euclidean",
                               dist.metric.y = "euclidean",
@@ -930,8 +960,18 @@ plotHclustHeatmap <- function(X,
         Dmat.x <- dist.mat.x
       }
     }
-    hclust_out_x <- hclust(Dmat.x, method = linkage.x)
-    order_x <- hclust_out_x$order
+    if (is.null(x.groups)) {
+      hclust_out_x <- hclust(Dmat.x, method = linkage.x)
+      order_x <- hclust_out_x$order
+    } else {
+      order_x <- rep(NA, ncol(X))
+      for (group in unique(x.groups)) {
+        group.idx <- x.groups == group
+        Dmat.x.sub <- as.dist(as.matrix(Dmat.x)[group.idx, group.idx])
+        hclust_out_x <- hclust(Dmat.x.sub, method = linkage.x)
+        order_x[group.idx] <- hclust_out_x$order + sum(!is.na(order_x))
+      }
+    }
     X <- X[, order_x]
     x.labels <- x.labels[order_x]
     if (!is.null(x.label.colors)) {
@@ -950,8 +990,18 @@ plotHclustHeatmap <- function(X,
         Dmat.y <- dist.mat.y
       }
     }
-    hclust_out_y <- hclust(Dmat.y, method = linkage.y)
-    order_y <- hclust_out_y$order
+    if (is.null(y.groups)) {
+      hclust_out_y <- hclust(Dmat.y, method = linkage.y)
+      order_y <- hclust_out_y$order
+    } else {
+      order_y <- rep(NA, nrow(X))
+      for (group in unique(y.groups)) {
+        group.idx <- y.groups == group
+        Dmat.y.sub <- as.dist(as.matrix(Dmat.y)[group.idx, group.idx])
+        hclust_out_y <- hclust(Dmat.y.sub, method = linkage.y)
+        order_y[group.idx] <- hclust_out_y$order + sum(!is.na(order_y))
+      }
+    }
     X <- X[order_y, ]
     y.labels <- y.labels[order_y]
     if (!is.null(y.label.colors)) {
@@ -963,12 +1013,12 @@ plotHclustHeatmap <- function(X,
                      y.labels.num = y.labels.num, x.labels.num = x.labels.num,
                      y.label.colors = y.label.colors, 
                      x.label.colors = x.label.colors,
+                     y.groups = y.groups, x.groups = x.groups,
                      text.size = text.size, theme = theme, 
                      position = "identity", size = size,
                      viridis = viridis, option = option, 
                      col_quantile = col_quantile, n_quantiles = n_quantiles, 
                      manual.fill = manual.fill, show.plot = show.plot, ...)
-  
   return(plt)
 }
 
