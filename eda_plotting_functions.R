@@ -793,7 +793,7 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
     }
     if (!y.labels.num) {
       plt <- plt + 
-        scale_y_discrete(expand = c(0, 0))
+        scale_y_discrete(expand = c(0, 0), limits = rev)
     } else {
       plt <- plt +
         scale_y_continuous(expand = c(0, 0))
