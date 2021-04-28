@@ -644,7 +644,6 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
   }
   
   # convert to long df to plot
-  X_long <- as.data.frame(X)
   if (!x.labels.num & !y.labels.num) {
     X_long <- as.data.frame(X) %>%
       setNames(x.labels) %>%
@@ -672,10 +671,18 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
   }
   
   if (!is.null(x.groups)) {
-    X_long$x.group <- x.groups[X_long$x]
+    X_long$x.group <- X_long %>%
+      left_join(y = data.frame(x.group = x.groups,
+                               x = x.labels),
+                by = "x") %>%
+      pull(x.group)
   }
   if (!is.null(y.groups)) {
-    X_long$y.group <- y.groups[X_long$y]
+    X_long$y.group <- X_long %>%
+      left_join(y = data.frame(y.group = y.groups,
+                               y = y.labels),
+                by = "y") %>%
+      pull(y.group)
   }
   
   # base plot
