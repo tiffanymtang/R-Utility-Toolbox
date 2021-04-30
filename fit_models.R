@@ -345,7 +345,7 @@ fitRF <- function(X, y, Xts = NULL, nfolds = 10, foldid = NULL, caret = FALSE,
                   ...)
     
     # make predictions
-    oob_idx <- do.call(cbind, rf_out$fit$inbag.counts) == 0  # oob index
+    oob_idx <- do.call(cbind, fit$inbag.counts) == 0  # oob index
     yhat_ts <- NULL
     if (is.factor(y)) {
       yhat_tr <- predict(fit, as.data.frame(X), predict.all = TRUE,
