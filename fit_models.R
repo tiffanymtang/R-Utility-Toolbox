@@ -342,6 +342,7 @@ fitRF <- function(X, y, Xts = NULL, nfolds = 10, foldid = NULL, caret = FALSE,
                   importance = "impurity",
                   mtry = mtry,
                   num.threads = 1,
+                  keep.inbag = TRUE,
                   ...)
     
     # make predictions
