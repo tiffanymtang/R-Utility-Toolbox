@@ -10,6 +10,7 @@ library(xgboost)
 library(e1071)
 library(kernlab)
 library(KRLS)
+library(iRF)  # devtools::install_github("karlkumbier/iRF2.0")
 
 fitLM <- function(X, y, Xts = NULL, p_cut = 0.05) {
   #### Function Description ####
@@ -475,6 +476,72 @@ fitRF <- function(X, y, Xts = NULL, nfolds = 10, foldid = NULL, caret = FALSE,
       rownames_to_column("var")
     sest <- which(imp$imp >= mean(imp$imp))
   }
+  
+  return(list(yhat_tr = yhat_tr, yhat_ts = yhat_ts, fit = fit, 
+              imp = imp, sest = sest))
+}
+
+fitiRF <- function(X, y, Xts = NULL,
+                   n_iter = 3, int_return = NULL, n_boot = 50, ...) {
+  #### Function Description ####
+  # fit iRF
+  # 
+  # input:
+  #   - X = training data matrix or data frame
+  #   - y = response vector
+  #   - Xts = (optional) test data matrix or test data frame
+  #   - n_iter = number of iRF iterations
+  #   - int_return = which iterations should interacitons be returned for
+  #   - n_boot = number of bootstraps for evaluating interactions
+  #   - ... = other arguments to feed into iRF()
+  # 
+  # returns: list of 4
+  #   - yhat_tr = vector of oob predicted responses using training data;
+  #   - yhat_ts = vector of predicted responses using test data
+  #   - fit = irf model fit; output of iRF()
+  #   - imp = importance df, as measured by iRF impurity score
+  #   - sest = estimated support, defined as impurity > mean(impurity)
+  ##############
+  
+  fit <- iRF(x = X, y = y, 
+             n.iter = n_iter, 
+             iter.return = 1:n_iter, 
+             int.return = int_return,
+             n.bootstrap = n_boot, 
+             type = "ranger", ...)
+  
+  # work with one iteration of iRF henceforth
+  if (n_iter > 1) {
+    rf_fit <- fit$rf.list[[n_iter]]
+  } else {
+    rf_fit <- fit$rf.list
+  }
+  
+  # make predictions
+  oob_idx <- do.call(cbind, rf_fit$inbag.counts) == 0  # oob index
+  yhat_ts <- NULL
+  if (is.factor(y)) {
+    yhat_tr <- predict(rf_fit, as.data.frame(X), predict.all = TRUE,
+                       num.threads = 1)$predictions - 1
+    yhat_tr <- rowSums(oob_idx * yhat_tr) / rowSums(oob_idx)
+    if (!is.null(Xts)) {
+      yhat_ts <- predict(rf_fit, as.data.frame(Xts), predict.all = TRUE,
+                         num.threads = 1)$predictions - 1
+      yhat_ts <- rowMeans(yhat_ts)
+    }
+  } else {
+    yhat_tr <- predict(rf_fit, as.data.frame(X), num.threads = 1)$predictions
+    yhat_tr <- rowSums(oob_idx * yhat_tr) / rowSums(oob_idx)
+    if (!is.null(Xts)) {
+      yhat_ts <- predict(rf_fit, as.data.frame(Xts), num.threads = 1)$predictions
+    }
+  }
+  
+  # get support
+  imp <- as.data.frame(rf_fit$variable.importance) %>%
+    setNames("imp") %>%
+    rownames_to_column("var")
+  sest <- which(imp$imp >= mean(imp$imp))
   
   return(list(yhat_tr = yhat_tr, yhat_ts = yhat_ts, fit = fit, 
               imp = imp, sest = sest))
