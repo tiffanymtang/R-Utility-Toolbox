@@ -15,7 +15,8 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
                       manual.color = NULL, manual.color2 = NULL,
                       columnLabels = colnames(data[, columns]), title = "",
                       size = .5, alpha = .5, cor.text.size = 3.5, subsample = 1,
-                      show.upper = T, drop = F, show.plot = F, ...) {
+                      show.upper = T, drop = F, theme_function = NULL,
+                      show.plot = F, ...) {
   ####### Function Description ########
   # function to plot nice pair plots of variables
   #
@@ -36,8 +37,10 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
   # - subsample = proportion of points to sample and plot
   # - title = string; title for ggplot
   # - drop = logical; whether or not to drop factors with no observations
+  # - theme_function = function which adds theme() to ggpairs() object; if NULL,
+  #     add myGGplotTheme(...) to ggplairs() object
   # - show.plot = logical; whether or not to show plot
-  # ... = additional arguments to pass to myGGplotTheme()
+  # ... = additional arguments to pass to myGGplotTheme() or theme_function()
   #
   # outputs: a ggpairs object
   #
@@ -83,7 +86,14 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
       upper = list(continuous = uplt),
       title = title,
       columnLabels = columnLabels
-    ) + myGGplotTheme(...)
+    )
+    
+    if (is.null(theme_function)) {
+      plt <- plt + 
+        myGGplotTheme(...)
+    } else {
+      plt <- theme_function(plt, ...)
+    }
     
   } else if (is.null(color2)) {  # one color
     
@@ -108,6 +118,14 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
         legend_plt <- legend_plt +
           scale_color_manual(values = manual.color, drop = drop)
       }
+      
+      if (is.null(theme_function)) {
+        legend_plt <- legend_plt + 
+          myGGplotTheme(...)
+      } else {
+        legend_plt <- theme_function(legend_plt, ...)
+      }
+      
       legend <- grab_legend(legend_plt)
     }
     
@@ -150,9 +168,15 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
       }
     }
     
-    plt <- plt + 
-      labs(color = color.label, fill = color.label) +
-      myGGplotTheme(...)
+    plt <- plt +
+      labs(color = color.label, fill = color.label)
+    
+    if (is.null(theme_function)) {
+      plt <- plt + 
+        myGGplotTheme(...)
+    } else {
+      plt <- theme_function(plt, ...)
+    }
     
   } else {
     # make lower scatter plots and color by color for the ggpairs plots
@@ -219,8 +243,7 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
         plt <- ggpairs(data = plt_df, columns = columns, 
                        title = title, legend = c(1, 1), 
                        columnLabels = columnLabels) + 
-          labs(color = color.label, fill = color.label) +
-          myGGplotTheme(...)
+          labs(color = color.label, fill = color.label)
       } else {
         if (is.factor(color)) {
           plt_df$plt_color <- color
@@ -236,8 +259,7 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
           legend = c(1, 1),
           columnLabels = columnLabels
         ) + 
-          labs(color = color.label, fill = color.label) +
-          myGGplotTheme(...)
+          labs(color = color.label, fill = color.label)
         
         if (is.null(manual.color)) {
           plt[1, 1] <- plt[1, 1] +
@@ -272,11 +294,22 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
       }
       if (is.null(manual.color2)) {
         legend_plt2 <- legend_plt2 +
-          myGGplotColor(color = color2, option = "C", viridis = T, drop = drop)
+          myGGplotColor(color = color2, option = "D", viridis = T, drop = drop)
       } else {
         legend_plt2 <- legend_plt2 +
           scale_color_manual(values = manual.color2, drop = drop)
       }
+      
+      if (is.null(theme_function)) {
+        legend_plt1 <- legend_plt1 + 
+          myGGplotTheme(...)
+        legend_plt2 <- legend_plt2 + 
+          myGGplotTheme(...)
+      } else {
+        legend_plt1 <- theme_function(legend_plt1, ...)
+        legend_plt2 <- theme_function(legend_plt2, ...)
+      }
+      
       legend1 <- grab_legend(legend_plt1)
       legend2 <- grab_legend(legend_plt2)
       
@@ -346,7 +379,7 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
               } else {
                 if (is.null(manual.color2)) {
                   plt[i, j] <- plt[i, j] +
-                    myGGplotFill(fill = color2, option = "C", viridis = T,
+                    myGGplotFill(fill = color2, option = "D", viridis = T,
                                  drop = drop)
                 } else {
                   plt[i, j] <- plt[i, j] +
@@ -376,7 +409,7 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
               } else {
                 if (is.null(manual.color2)) {
                   plt[i, j] <- plt[i, j] +
-                    myGGplotColor(color = color2, option = "C", viridis = T,
+                    myGGplotColor(color = color2, option = "D", viridis = T,
                                   drop = drop)
                 } else {
                   plt[i, j] <- plt[i, j] +
@@ -390,11 +423,23 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
     }
     
     if (length(columns) != 1) {
-      plt <- plot_grid(ggmatrix_gtable(plt + myGGplotTheme(...)),
-                       legend1, legend2, 
-                       nrow = 3, rel_heights = c(10, 1, 1))
+      if (is.null(theme_function)) {
+        plt <- plot_grid(ggmatrix_gtable(plt + myGGplotTheme(...)),
+                         legend1, legend2, 
+                         nrow = 3, rel_heights = c(10, 1, 1))
+      } else {
+        plt <- plot_grid(ggmatrix_gtable(theme_function(plt, ...)),
+                         legend1, legend2, 
+                         nrow = 3, rel_heights = c(10, 1, 1))
+      }
+    } else {
+      if (is.null(theme_function)) {
+        plt <- plt + 
+          myGGplotTheme(...)
+      } else {
+        plt <- theme_function(plt, ...)
+      }
     }
-    
   }
   
   if (show.plot) {
@@ -583,7 +628,7 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
                         y.labels.num = FALSE, x.labels.num = FALSE,
                         y.label.colors = NULL, x.label.colors = NULL,
                         y.groups = NULL, x.groups = NULL,
-                        center = FALSE, scale = FALSE, 
+                        center = FALSE, scale = FALSE, z.range = NULL,
                         text.size = 0, theme = "default", position = "identity",
                         size = 0, viridis = T, option = "C", 
                         col_quantile = F, n_quantiles = 5,
@@ -603,6 +648,8 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
   # - x.groups = vector of groups for columns/x
   # - center = logical; whether or not to center columns of X
   # - scale = logical; whether or not to scale columns of X
+  # - z.range = vector of length 2 with min and max of value range for heatmap;
+  #     to set bounds for fill legend
   # - text.size = numeric; size of text on heatmap; no text if text.size = 0
   # - theme = "default" or "blank"
   # - position = "identity" or "ordered"
@@ -641,6 +688,15 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
   # center/scale X if specified
   if (center | scale) {
     X <- scale(X, center = center, scale = scale)
+  }
+  
+  # get range
+  if (is.null(z.range)) {
+    z.min <- min(X, na.rm = T)
+    z.max <- max(X, na.rm = T)
+  } else {
+    z.min <- z.range[1]
+    z.max <- z.range[2]
   }
   
   # convert to long df to plot
@@ -738,11 +794,11 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
       if (manual.fill == "temperature") {
         plt <- plt + 
           scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
-                               midpoint = median(X_long$fill),
-                               limit = c(min(X_long$fill), max(X_long$fill))) +
+                               midpoint = (z.min + z.max) / 2,
+                               limit = c(z.min, z.max)) +
           scale_color_gradient2(low = "blue", high = "red", mid = "white",
-                                midpoint = median(X_long$fill),
-                                limit = c(min(X_long$fill), max(X_long$fill)))
+                                midpoint = (z.min + z.max) / 2,
+                                limit = c(z.min, z.max))
       } else if (manual.fill == "cor_temperature") {
         plt <- plt + 
           scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
@@ -890,7 +946,7 @@ plotHclustHeatmap <- function(X,
                               dist.metric.y = "euclidean",
                               dist.mat.x = NULL, dist.mat.y = NULL,
                               linkage.x = "ward.D", linkage.y = "ward.D",
-                              center = FALSE, scale = FALSE,
+                              center = FALSE, scale = FALSE, z.range = NULL,
                               text.size = 0, theme = "default", size = 0,
                               viridis = T, option = "C", 
                               col_quantile = F, n_quantiles = 5,
@@ -918,6 +974,8 @@ plotHclustHeatmap <- function(X,
   # - linkage.y = type of linkage for clustering rows (see stats::hclust)
   # - center = logical; whether or not to center columns of X
   # - scale = logical; whether or not to scale columns of X
+  # - z.range = vector of length 2 with min and max of value range for heatmap;
+  #     to set bounds for fill legend
   # - text.size = numeric; size of text on heatmap; no text if text.size = 0
   # - theme = "default" or "blank"
   # - size = size argument in geom_tile() to avoid white lines in continuous
@@ -942,7 +1000,7 @@ plotHclustHeatmap <- function(X,
   if (!all(sapply(X, is.numeric))) {
     stop("X must contain only numeric data. Please remove non-numeric columns.")
   }
-  if (any(is.na(X))) {
+  if (any(is.na(X)) & (clust.x | clust.y)) {
     stop("NAs found in data. Please remove NAs.")
   }
   
@@ -1025,7 +1083,7 @@ plotHclustHeatmap <- function(X,
                      y.label.colors = y.label.colors, 
                      x.label.colors = x.label.colors,
                      y.groups = y.groups, x.groups = x.groups,
-                     text.size = text.size, theme = theme, 
+                     z.range = z.range, text.size = text.size, theme = theme, 
                      position = "identity", size = size,
                      viridis = viridis, option = option, 
                      col_quantile = col_quantile, n_quantiles = n_quantiles, 
@@ -1035,7 +1093,7 @@ plotHclustHeatmap <- function(X,
 
 plotCorHeatmap <- function(X, cor.type = "pearson",
                            axis.labels = colnames(X), axis.label.colors = NULL,
-                           clust = TRUE, linkage = "ward.D",
+                           clust = TRUE, linkage = "ward.D", z.range = c(-1, 1),
                            text.size = 0, theme = "default",
                            viridis = T, option = "C", 
                            col_quantile = F, n_quantiles = 5,
@@ -1051,6 +1109,8 @@ plotCorHeatmap <- function(X, cor.type = "pearson",
   # - axis.label.colors = vector to use for coloring axis text labels; optional
   # - clust = logical; whether or not to cluster columns and rows
   # - linkage = type of linkage for clustering (see stats::hclust)
+  # - z.range = vector of length 2 with min and max of value range for heatmap;
+  #     to set bounds for fill legend
   # - text.size = numeric; size of text on heatmap; no text if text.size = 0
   # - theme = "default" or "blank"
   # - position = "identity" or "ordered"
@@ -1093,7 +1153,7 @@ plotCorHeatmap <- function(X, cor.type = "pearson",
                      y.labels = axis.labels, x.labels = axis.labels, 
                      y.label.colors = axis.label.colors, 
                      x.label.colors = axis.label.colors,
-                     text.size = text.size, theme = theme, 
+                     z.range = z.range, text.size = text.size, theme = theme, 
                      position = "identity", viridis = viridis, option = option, 
                      col_quantile = col_quantile, n_quantiles = n_quantiles, 
                      manual.fill = manual.fill, show.plot = show.plot, ...)

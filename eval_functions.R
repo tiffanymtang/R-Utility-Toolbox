@@ -10,7 +10,7 @@ evalPreds <- function(y, yhat, metric, group = NULL, na.rm = F) {
   # 
   # inputs:
   # - y = vector, matrix, or data.frame of the true response values
-  # - yhat = vector, matrix, or data.frame of the true response values
+  # - yhat = vector, matrix, or data.frame of the estimated response values
   # - metric = character vector of prediction error metrics to compute; elements
   #   should be one of "RMSE", "MSE", "R2", "MAE", "Correlation", "Class",
   #   "BalancedClass", "AUC", "PR"

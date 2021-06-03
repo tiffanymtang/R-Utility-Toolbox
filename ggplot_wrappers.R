@@ -6,7 +6,8 @@ source("./ggplot_themes.R")
 
 plotBarplot <- function(data, x.str, y.str = NULL,
                         fill.str = NULL, fill = "#6FBBE3", 
-                        stat = "count", show.plot = F, ...) {
+                        stat = "count", position = "dodge",
+                        show.plot = F, ...) {
   ####### Function Description ########
   # plot nice barplots using custom ggplot theme
   # 
@@ -17,6 +18,7 @@ plotBarplot <- function(data, x.str, y.str = NULL,
   # - fill.str = string (optional); variable name to use as color for plotting
   # - fill = barplot fill color
   # - stat = see geom_bar()
+  # - position = see geom_bar()
   # - show.plot = logical; whether or not to print plot
   # ... = other geom_bar() arguments
   #
@@ -48,7 +50,7 @@ plotBarplot <- function(data, x.str, y.str = NULL,
         labs(y = y.str, x = x.str)
     }
     plt <- plt +
-      geom_bar(position = "dodge", stat = stat, color = "grey98",
+      geom_bar(position = position, stat = stat, color = "grey98",
                fill = fill, ...) +
       myGGplotTheme()
   } else {
@@ -66,7 +68,7 @@ plotBarplot <- function(data, x.str, y.str = NULL,
         labs(y = y.str, x = x.str, fill = fill.str)
     }
     plt <- plt + 
-      geom_bar(position = "dodge", stat = stat, color = "grey98", ...) +
+      geom_bar(position = position, stat = stat, color = "grey98", ...) +
       myGGplotTheme() +
       myGGplotFill(fill = data$fill)
   }

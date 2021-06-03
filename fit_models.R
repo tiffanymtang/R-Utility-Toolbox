@@ -359,7 +359,8 @@ fitRF <- function(X, y, Xts = NULL, nfolds = 10, foldid = NULL, caret = FALSE,
         yhat_ts <- rowMeans(yhat_ts)
       }
     } else {
-      yhat_tr <- predict(fit, as.data.frame(X), num.threads = 1)$predictions
+      yhat_tr <- predict(fit, as.data.frame(X), predict.all = TRUE,
+                         num.threads = 1)$predictions
       yhat_tr <- rowSums(oob_idx * yhat_tr) / rowSums(oob_idx)
       if (!is.null(Xts)) {
         yhat_ts <- predict(fit, as.data.frame(Xts), num.threads = 1)$predictions
