@@ -942,6 +942,7 @@ plotHclustHeatmap <- function(X,
                               y.label.colors = NULL, x.label.colors = NULL,
                               y.groups = NULL, x.groups = NULL,
                               clust.x = TRUE, clust.y = TRUE,
+                              clust.x.wi.group = TRUE, clust.y.wi.group = TRUE,
                               dist.metric.x = "euclidean",
                               dist.metric.y = "euclidean",
                               dist.mat.x = NULL, dist.mat.y = NULL,
@@ -962,8 +963,12 @@ plotHclustHeatmap <- function(X,
   # - x.labels.num = logical; whether or not x labels are numeric/continuous
   # - y.label.colors = vector to use for coloring y axis text; optional
   # - x.label.colors = vector to use for coloring x axis text; optional
+  # - y.groups = vector of groups for rows/y
+  # - x.groups = vector of groups for columns/x
   # - clust.x = logical; whether or not to cluster columns
   # - clust.y = logical; whether or not to cluster rows
+  # - clust.x.wi.group = logical; whether or not cluster within x.groups
+  # - clust.y.wi.group = logical; whether or not cluster within y.groups
   # - dist.metric.x = distance metric for clustering columns (see stats::dist)
   # - dist.metric.y = distance metric for clustering rows (see stats::dist)
   # - dist.mat.x = distance matrix for clustering columns (optional); must 
@@ -1028,6 +1033,10 @@ plotHclustHeatmap <- function(X,
     if (is.null(x.groups)) {
       hclust_out_x <- hclust(Dmat.x, method = linkage.x)
       order_x <- hclust_out_x$order
+    } else if (!clust.x.wi.group) {
+      hclust_out_x <- hclust(Dmat.x, method = linkage.x)
+      order_x <- hclust_out_x$order
+      x.groups <- x.groups[order_x]
     } else {
       order_x <- c()
       for (group in unique(x.groups)) {
@@ -1060,6 +1069,10 @@ plotHclustHeatmap <- function(X,
     if (is.null(y.groups)) {
       hclust_out_y <- hclust(Dmat.y, method = linkage.y)
       order_y <- hclust_out_y$order
+    } else if (!clust.y.wi.group) {
+      hclust_out_y <- hclust(Dmat.y, method = linkage.y)
+      order_y <- hclust_out_y$order
+      y.groups <- y.groups[order_y]
     } else {
       order_y <- c()
       for (group in unique(y.groups)) {
