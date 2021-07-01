@@ -189,10 +189,14 @@ myKable <- function(X, digits = 3, sigfig = T, align = "c",
   }
 }
 
-myDT <- function(X, digits = 3, sigfig = T, 
+myDT <- function(X, digits = 3, sigfig = T,
                  escape = F, caption = "", na_disp = "NA",
                  bold_function = NULL, bold_margin = NULL, 
                  bold_scheme = T, bold_color = NULL,
+                 option = list(
+                   columnDefs = list(list(className = 'dt-center', 
+                                          targets = 0:ncol(X)))
+                 ),
                  return_df = FALSE, ...) {
   ####### Function Description ########
   # function to make custom DT::datatable with bolding options
@@ -212,6 +216,7 @@ myDT <- function(X, digits = 3, sigfig = T,
   #   apply bold_function to row/column if bold_margin 0, 1, 2
   # - bold_color = color of bolded text
   # - return_df = T/F; whether or not to return data frame
+  # - option = option argument in DT::datatable
   # - ... = additional arguments to pass to DT::datatable()
   # 
   # output:
@@ -340,7 +345,9 @@ myDT <- function(X, digits = 3, sigfig = T,
   colnames(dt_df) <- colnames(X)
   
   # make datatable
-  dt_out <- DT::datatable(dt_df, escape = escape, caption = caption, ...)
+  dt_out <- DT::datatable(dt_df, escape = escape, caption = caption,
+                          option = option, ...) %>%
+    
   
   if (return_df) {
     return(list(dt = dt_out, df = dt_df))
