@@ -346,8 +346,7 @@ myDT <- function(X, digits = 3, sigfig = T,
   
   # make datatable
   dt_out <- DT::datatable(dt_df, escape = escape, caption = caption,
-                          option = option, ...) %>%
-    
+                          option = option, ...)
   
   if (return_df) {
     return(list(dt = dt_out, df = dt_df))
