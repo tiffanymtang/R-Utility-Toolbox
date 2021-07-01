@@ -121,7 +121,7 @@ myKable <- function(X, digits = 3, sigfig = T, align = "c",
       # for integers
       kable_df <- kable_df %>%
         mutate_at(
-          colnames(.)[bold_scheme & int_cols][bold_function == f],
+          colnames(.)[bold_scheme & int_cols & (bold_function == f)],
           list(~case_when(
             is.na(.) ~ na_disp,
             eval(parse(text = f)) ~ 
@@ -134,7 +134,7 @@ myKable <- function(X, digits = 3, sigfig = T, align = "c",
       # for non-integers
       kable_df <- kable_df %>%
         mutate_at(
-          colnames(.)[bold_scheme & !int_cols][bold_function == f],
+          colnames(.)[bold_scheme & !int_cols & (bold_function == f)],
           list(~case_when(
             is.na(.) ~ na_disp,
             eval(parse(text = f)) ~ 
@@ -291,7 +291,8 @@ myDT <- function(X, digits = 3, sigfig = T,
       # for integers
       dt_df <- dt_df %>%
         mutate_at(
-          colnames(.)[bold_scheme & int_cols][bold_function == f],
+          # mutate_cols,
+          colnames(.)[bold_scheme & int_cols & (bold_function == f)],
           list(~case_when(
             is.na(.) ~ na_disp,
             eval(parse(text = f)) ~ 
@@ -304,7 +305,7 @@ myDT <- function(X, digits = 3, sigfig = T,
       # for non-integers
       dt_df <- dt_df %>%
         mutate_at(
-          colnames(.)[bold_scheme & !int_cols][bold_function == f],
+          colnames(.)[bold_scheme & !int_cols & (bold_function == f)],
           list(~case_when(
             is.na(.) ~ na_disp,
             eval(parse(text = f)) ~ 
