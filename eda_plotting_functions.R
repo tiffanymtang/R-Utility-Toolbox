@@ -867,17 +867,26 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
   
   # add color to x and y axis text
   if (!is.null(y.label.colors)) {
-    ylab_df <- data.frame(ylab_x = 1, ylab_y = 1, ylab_color = y.label.colors)
+    if (length(ggplot_build(plt)$layout$panel_params) > 1) {
+      stop("Colors cannot be added to axis text labels when facets are used. Set y.label.colors = NULL.")
+    }
+    y_labs <- lapply(rev(ggplot_build(plt)$layout$panel_params),
+                     function(x) x$y$get_labels()) %>%
+      purrr::reduce(c)  # y axis plot labels from bottom to top
+    ylab_df <- data.frame(ylab_x = 1, ylab_y = 1, 
+                          ylab_color = y.label.colors,
+                          ylab = y.labels) %>%
+      left_join(x = data.frame(ylab = y_labs), y = ., by = "ylab")
     if (is.factor(y.label.colors)) {
       if (nlevels(y.label.colors) <= 8) {
         y_colors <- brewer.pal(n = 8, name = "Dark2")
         y_colors[2] <- y_colors[1]
         y_colors[1] <- "#FF9300"
-        ylab_colors <- y_colors[y.label.colors]
+        ylab_colors <- y_colors[ylab_df$ylab_color]
       } else {
         y_colors <- colorFactor(palette = "viridis", 
-                                domain = levels(y.label.colors))
-        ylab_colors <- y_colors(y.label.colors)
+                                domain = levels(ylab_df$ylab_color))
+        ylab_colors <- y_colors(ylab_df$ylab_color)
       }
       plt <- plt +
         geom_point(aes(x = ylab_x, y = ylab_y, color = ylab_color), 
@@ -888,7 +897,7 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
       y_colors <- colorNumeric(palette = "viridis", 
                                domain = c(min(y.label.colors), 
                                           max(y.label.colors)))
-      ylab_colors <- y_colors(y.label.colors)
+      ylab_colors <- y_colors(ylab_df$ylab_color)
       plt <- plt +
         geom_point(aes(x = ylab_x, y = ylab_y, color = ylab_color), 
                    data = ylab_df, size = -1) +
@@ -898,17 +907,26 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
       theme(axis.text.y = element_text(color = ylab_colors))
   }
   if (!is.null(x.label.colors)) {
-    xlab_df <- data.frame(xlab_x = 1, xlab_y = 1, xlab_color = x.label.colors)
+    if (length(ggplot_build(plt)$layout$panel_params) > 1) {
+      stop("Colors cannot be added to axis text labels when facets are used. Set x.label.colors = NULL.")
+    }
+    x_labs <- lapply(ggplot_build(plt)$layout$panel_params,
+                     function(x) x$x$get_labels()) %>%
+      purrr::reduce(c)  # x axis plot labels from left to right
+    xlab_df <- data.frame(xlab_x = 1, xlab_y = 1, 
+                          xlab_color = x.label.colors,
+                          xlab = x.labels) %>%
+      left_join(x = data.frame(xlab = x_labs), y = ., by = "xlab")
     if (is.factor(x.label.colors)) {
       if (nlevels(x.label.colors) <= 8) {
         x_colors <- brewer.pal(n = 8, name = "Dark2")
         x_colors[2] <- x_colors[1]
         x_colors[1] <- "#FF9300"
-        xlab_colors <- x_colors[x.label.colors]
+        xlab_colors <- x_colors[xlab_df$xlab_color]
       } else {
         x_colors <- colorFactor(palette = "viridis", 
-                                domain = levels(x.label.colors))
-        xlab_colors <- x_colors(x.label.colors)
+                                domain = levels(xlab_df$xlab_color))
+        xlab_colors <- x_colors(xlab_df$xlab_color)
       }
       plt <- plt +
         geom_point(aes(x = xlab_x, y = xlab_y, color = xlab_color), 
@@ -919,7 +937,7 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
       x_colors <- colorNumeric(palette = "viridis", 
                                domain = c(min(x.label.colors), 
                                           max(x.label.colors)))
-      xlab_colors <- x_colors(x.label.colors)
+      xlab_colors <- x_colors(xlab_df$xlab_color)
       plt <- plt +
         geom_point(aes(x = xlab_x, y = xlab_y, color = xlab_color), 
                    data = xlab_df, size = -1) +
