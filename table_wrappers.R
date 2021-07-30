@@ -239,7 +239,7 @@ myDT <- function(X, digits = 3, sigfig = T,
   }
   
   if (!("columnDefs" %in% names(options))) {  # make default center alignment
-    if (rowanmes) {
+    if (rownames) {
       targets <- 1:ncol(X)
     } else {
       targets <- 0:(ncol(X) - 1)
@@ -353,7 +353,7 @@ myDT <- function(X, digits = 3, sigfig = T,
   
   # make datatable
   dt_out <- DT::datatable(dt_df, escape = escape, caption = caption,
-                          options = options, ...)
+                          rownames = rownames, options = options,  ...)
   
   if (return_df) {
     return(list(dt = dt_out, df = dt_df))
