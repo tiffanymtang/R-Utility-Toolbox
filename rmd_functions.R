@@ -1,7 +1,7 @@
 # rmarkdown helper functions
 
 subchunkify <- function(g, i, fig_height = 12, fig_width = 10, caption = "''",
-                        other_args = "") {
+                        add_class = NULL, other_args = "") {
   ####### Function Description ########
   # function to allow for multiple plots of different sizes and captions
   # within a single R code chunk
@@ -15,6 +15,7 @@ subchunkify <- function(g, i, fig_height = 12, fig_width = 10, caption = "''",
   # - fig_width = width of figure
   # - caption = figure caption; should be within surrounded by two sets of
   #     quotes, e.g., "'This is a valid caption.'"
+  # - add_class = css classes to add to object
   # - other_args = other arguments to pass to R code chunk header
   ####### 
   
@@ -34,5 +35,11 @@ subchunkify <- function(g, i, fig_height = 12, fig_width = 10, caption = "''",
                       "\n`","``
   ")
   
+  if (!is.null(add_class)) {
+    cat(sprintf("<div class='%s'>", paste(add_class)))
+  }
   cat(knitr::knit(text = knitr::knit_expand(text = sub_chunk), quiet = TRUE))
+  if (!is.null(add_class)) {
+    cat("</div>")
+  }
 }
