@@ -190,3 +190,28 @@ evalPermTest <- function(y, yhat, metric, B = 1e3, na.rm = F) {
   return(list(pval = pvals, obs_err = obs_errs, perm_dist = errs))
   
 }
+
+evalAUC <- function(y, yhat, metric = "roc") {
+  ###### Function Description ######
+  # evaluates AUC (for ROC or PR) between observed y and predicted y
+  # 
+  # inputs:
+  # - y = observed response vector
+  # - yhat = predicted response vector
+  # - metric = "roc" or "pr"
+  ######
+  
+  if (all(yhat == yhat[1])) {
+    warning("Predictions are all the same.")
+    out <- NULL
+  } else {
+    if (metric == "roc") {
+      out <- roc.curve(yhat[y == 1], yhat[y == 0], curve = T)
+    } else if (metric == "pr") {
+      out <- pr.curve(yhat[y == 1], yhat[y == 0], curve = T)
+    } else {
+      stop("metric is unknown. metric must be one of 'roc' or 'pr'.")
+    }
+  }
+  return(out)
+}

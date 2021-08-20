@@ -4,14 +4,14 @@ library(tidyverse)
 library(knitr)
 library(kableExtra)
 
-myKable <- function(X, digits = 3, sigfig = T, align = "c", 
-                    caption = "", format = "html", na_disp = "NA",
-                    bold_function = NULL, bold_margin = NULL, 
-                    bold_scheme = T, bold_color = NULL,
-                    full_width = NULL, position = "center",
-                    font_size = NULL, fixed_thead = F,
-                    scroll = F, scroll_width = NULL, scroll_height = NULL,
-                    return_df = FALSE, ...) {
+prettyKable <- function(X, digits = 3, sigfig = T, align = "c", 
+                        caption = "", format = "html", na_disp = "NA",
+                        bold_function = NULL, bold_margin = NULL, 
+                        bold_scheme = T, bold_color = NULL,
+                        full_width = NULL, position = "center",
+                        font_size = NULL, fixed_thead = F,
+                        scroll = F, scroll_width = NULL, scroll_height = NULL,
+                        return_df = FALSE, ...) {
   ####### Function Description ########
   # function to make custom kable table with bolding options
   # 
@@ -48,11 +48,11 @@ myKable <- function(X, digits = 3, sigfig = T, align = "c",
   #     - df = data frame   
   # 
   # example usage:
-  # myKable(iris, align = "c", caption = "caption", format = "html")
-  # myKable(iris, caption = "caption", format = "html", scroll = T,
+  # prettyKable(iris, align = "c", caption = "caption", format = "html")
+  # prettyKable(iris, caption = "caption", format = "html", scroll = T,
   #         bold_function = ". == max(.)", bold_margin = 2,
   #         bold_scheme = c(T, T, T, T, F), bold_color = "red")
-  # myKable(iris %>% select(-Species), sigfig = T, caption = "caption",
+  # prettyKable(iris %>% select(-Species), sigfig = T, caption = "caption",
   #         format = "latex", scroll = T, na_disp = "NA",
   #         bold_function = ". == min(.)", bold_margin = 1,
   #         bold_scheme = T, bold_color = "black")
@@ -189,7 +189,7 @@ myKable <- function(X, digits = 3, sigfig = T, align = "c",
   }
 }
 
-myDT <- function(X, digits = 3, sigfig = T,
+prettyDT <- function(X, digits = 3, sigfig = T,
                  escape = F, rownames = TRUE, caption = "", na_disp = "NA",
                  bold_function = NULL, bold_margin = NULL, 
                  bold_scheme = T, bold_color = NULL,
@@ -223,11 +223,11 @@ myDT <- function(X, digits = 3, sigfig = T,
   #     - df = data frame   
   # 
   # example usage:
-  # myDT(iris, caption = "caption")
-  # myDT(iris, caption = "caption",
+  # prettyDT(iris, caption = "caption")
+  # prettyDT(iris, caption = "caption",
   #      bold_function = ". == max(.)", bold_margin = 2,
   #      bold_scheme = c(T, T, T, T, F), bold_color = "red")
-  # myDT(iris %>% select(-Species), sigfig = T, caption = "caption",
+  # prettyDT(iris %>% select(-Species), sigfig = T, caption = "caption",
   #      na_disp = "NA", bold_function = ". == min(.)", bold_margin = 1,
   #      bold_scheme = T, bold_color = "black")
   #######

@@ -45,9 +45,9 @@ A collection of my random but frequently used R functions to make life easier as
 ### Plots and Tables
 
 - **ggplot_themes.R**: create customized ggplot theme
-	- **myGGplotTheme()**: customized ggplot theme
-	- **myGGplotColor()**: customized ggplot color theme
-	- **myGGplotFill()**: customized ggplot fill theme
+	- **prettyGGplotTheme()**: customized ggplot theme
+	- **prettyGGplotColor()**: customized ggplot color theme
+	- **prettyGGplotFill()**: customized ggplot fill theme
 
 - **ggplot_wrappers.R**: convenient wrapper functions around common ggplot geometric objects (geoms) and adds custom ggplot theme
 	- **plotBarplot()**
@@ -63,8 +63,8 @@ A collection of my random but frequently used R functions to make life easier as
 	- **plotHeatmap()**
 
 - **table_wrappers.R**: convenient wrapper functions to make tables using kable and datatable
-	- **myKable()**: function to make nice kable tables with options to bold certain entries
-	- **myDT()**: function to make nice DT tables with options to bold certain entries
+	- **prettyKable()**: function to make nice kable tables with options to bold certain entries
+	- **prettyDT()**: function to make nice DT tables with options to bold certain entries
 
 ### Rmarkdown Templates
 

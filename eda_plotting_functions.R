@@ -38,9 +38,9 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
   # - title = string; title for ggplot
   # - drop = logical; whether or not to drop factors with no observations
   # - theme_function = function which adds theme() to ggpairs() object; if NULL,
-  #     add myGGplotTheme(...) to ggplairs() object
+  #     add prettyGGplotTheme(...) to ggplairs() object
   # - show.plot = logical; whether or not to show plot
-  # ... = additional arguments to pass to myGGplotTheme() or theme_function()
+  # ... = additional arguments to pass to prettyGGplotTheme() or theme_function()
   #
   # outputs: a ggpairs object
   #
@@ -90,7 +90,7 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
     
     if (is.null(theme_function)) {
       plt <- plt + 
-        myGGplotTheme(...)
+        prettyGGplotTheme(...)
     } else {
       plt <- theme_function(plt, ...)
     }
@@ -113,7 +113,7 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
         labs(color = color.label)
       if (is.null(manual.color)) {
         legend_plt <- legend_plt +
-          myGGplotColor(color = color, drop = drop)
+          prettyGGplotColor(color = color, drop = drop)
       } else {
         legend_plt <- legend_plt +
           scale_color_manual(values = manual.color, drop = drop)
@@ -121,7 +121,7 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
       
       if (is.null(theme_function)) {
         legend_plt <- legend_plt + 
-          myGGplotTheme(...)
+          prettyGGplotTheme(...)
       } else {
         legend_plt <- theme_function(legend_plt, ...)
       }
@@ -158,8 +158,8 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
       for (j in 1:plt$ncol) {
         if (is.null(manual.color)) {
           plt[i, j] <- plt[i, j] +
-            myGGplotColor(color = color, drop = drop) +
-            myGGplotFill(fill = color, drop = drop)
+            prettyGGplotColor(color = color, drop = drop) +
+            prettyGGplotFill(fill = color, drop = drop)
         } else {
           plt[i, j] <- plt[i, j] +
             scale_color_manual(values = manual.color, drop = drop) +
@@ -173,7 +173,7 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
     
     if (is.null(theme_function)) {
       plt <- plt + 
-        myGGplotTheme(...)
+        prettyGGplotTheme(...)
     } else {
       plt <- theme_function(plt, ...)
     }
@@ -263,8 +263,8 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
         
         if (is.null(manual.color)) {
           plt[1, 1] <- plt[1, 1] +
-            myGGplotColor(color = plt_df$plt_color, drop = drop) +
-            myGGplotFill(fill = plt_df$plt_color, drop = drop)
+            prettyGGplotColor(color = plt_df$plt_color, drop = drop) +
+            prettyGGplotFill(fill = plt_df$plt_color, drop = drop)
         } else {
           plt[1, 1] <- plt[1, 1] +
             scale_color_manual(values = manual.color, drop = drop) +
@@ -287,14 +287,14 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
         theme(legend.position = "bottom")
       if (is.null(manual.color)) {
         legend_plt1 <- legend_plt1 +
-          myGGplotColor(color = color, drop = drop)
+          prettyGGplotColor(color = color, drop = drop)
       } else {
         legend_plt1 <- legend_plt1 +
           scale_color_manual(values = manual.color, drop = drop)
       }
       if (is.null(manual.color2)) {
         legend_plt2 <- legend_plt2 +
-          myGGplotColor(color = color2, option = "D", viridis = T, drop = drop)
+          prettyGGplotColor(color = color2, option = "D", viridis = T, drop = drop)
       } else {
         legend_plt2 <- legend_plt2 +
           scale_color_manual(values = manual.color2, drop = drop)
@@ -302,9 +302,9 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
       
       if (is.null(theme_function)) {
         legend_plt1 <- legend_plt1 + 
-          myGGplotTheme(...)
+          prettyGGplotTheme(...)
         legend_plt2 <- legend_plt2 + 
-          myGGplotTheme(...)
+          prettyGGplotTheme(...)
       } else {
         legend_plt1 <- theme_function(legend_plt1, ...)
         legend_plt2 <- theme_function(legend_plt2, ...)
@@ -371,7 +371,7 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
                       as.character(color))) {
                 if (is.null(manual.color)) {
                   plt[i, j] <- plt[i, j] +
-                    myGGplotFill(fill = color, drop = drop)
+                    prettyGGplotFill(fill = color, drop = drop)
                 } else {
                   plt[i, j] <- plt[i, j] +
                     scale_fill_manual(values = manual.color, drop = drop)
@@ -379,7 +379,7 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
               } else {
                 if (is.null(manual.color2)) {
                   plt[i, j] <- plt[i, j] +
-                    myGGplotFill(fill = color2, option = "D", viridis = T,
+                    prettyGGplotFill(fill = color2, option = "D", viridis = T,
                                  drop = drop)
                 } else {
                   plt[i, j] <- plt[i, j] +
@@ -401,7 +401,7 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
               if (ptr) {
                 if (is.null(manual.color)) {
                   plt[i, j] <- plt[i, j] +
-                    myGGplotColor(color = color, drop = drop)
+                    prettyGGplotColor(color = color, drop = drop)
                 } else {
                   plt[i, j] <- plt[i, j] +
                     scale_color_manual(values = manual.color, drop = drop)
@@ -409,7 +409,7 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
               } else {
                 if (is.null(manual.color2)) {
                   plt[i, j] <- plt[i, j] +
-                    myGGplotColor(color = color2, option = "D", viridis = T,
+                    prettyGGplotColor(color = color2, option = "D", viridis = T,
                                   drop = drop)
                 } else {
                   plt[i, j] <- plt[i, j] +
@@ -424,7 +424,7 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
     
     if (length(columns) != 1) {
       if (is.null(theme_function)) {
-        plt <- plot_grid(ggmatrix_gtable(plt + myGGplotTheme(...)),
+        plt <- plot_grid(ggmatrix_gtable(plt + prettyGGplotTheme(...)),
                          legend1, legend2, 
                          nrow = 3, rel_heights = c(10, 1, 1))
       } else {
@@ -435,7 +435,7 @@ plotPairs <- function(data, columns, color = NULL, color2 = NULL,
     } else {
       if (is.null(theme_function)) {
         plt <- plt + 
-          myGGplotTheme(...)
+          prettyGGplotTheme(...)
       } else {
         plt <- theme_function(plt, ...)
       }
@@ -483,7 +483,7 @@ plotPCA <- function(X, pca.out,
   # - show.plot = logical; whether or not to show plot
   # - save = logical; whether or not to save plot
   # - path = string ending in .rds; filename to save plot
-  # - ... = additional arguments to pass to myGGplotTheme()
+  # - ... = additional arguments to pass to prettyGGplotTheme()
   #
   # outputs: list of 4
   # - plot = pca pair plots
@@ -578,10 +578,10 @@ plotPCA <- function(X, pca.out,
           y = paste0("PC2", var_explained_str[2]),
           color = color.label, title = title
         ) +
-        myGGplotTheme(...)
+        prettyGGplotTheme(...)
       
       if (is.null(manual.color)) {
-        plt <- plt + myGGplotColor(color = plt_df$color)
+        plt <- plt + prettyGGplotColor(color = plt_df$color)
       } else {
         plt <- plt + scale_color_manual(values = manual.color)
       }
@@ -594,7 +594,7 @@ plotPCA <- function(X, pca.out,
           y = paste0("PC2", var_explained_str[2]),
           title = title
         ) +
-        myGGplotTheme(...)
+        prettyGGplotTheme(...)
     }
   } else {
     plt <- plotPairs(data = plt_df, columns = pcs, title = title, 
@@ -663,7 +663,7 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
   # - manual.fill = "temperature" or vector of colors for the color scale
   #     (optional)
   # - show.plot = logical; whether or not to print plot
-  # - ... = additional arguments to pass to myGGplotTheme()
+  # - ... = additional arguments to pass to prettyGGplotTheme()
   #
   # outputs: a ggplot object
   # 
@@ -777,7 +777,7 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
   
   # add theme
   if (identical(theme, "default")) {
-    plt <- plt + myGGplotTheme(...)
+    plt <- plt + prettyGGplotTheme(...)
   } else if (identical(theme, "blank")) {
     plt <- plt + myGGplotMapTheme()
   } else {
@@ -788,8 +788,8 @@ plotHeatmap <- function(X, y.labels = rownames(X), x.labels = colnames(X),
   if (!col_quantile | is.factor(X_long$fill)) {
     if (is.null(manual.fill)) {
       plt <- plt +
-        myGGplotFill(fill = fill, viridis = viridis, option = option) +
-        myGGplotColor(color = fill, viridis = viridis, option = option)
+        prettyGGplotFill(fill = fill, viridis = viridis, option = option) +
+        prettyGGplotColor(color = fill, viridis = viridis, option = option)
     } else {
       if (manual.fill == "temperature") {
         plt <- plt + 
@@ -1011,7 +1011,7 @@ plotHclustHeatmap <- function(X,
   # - manual.fill = "temperature" or vector of colors for the color scale
   #     (optional)
   # - show.plot = logical; whether or not to print plot
-  # - ... = additional arguments to pass to myGGplotTheme()
+  # - ... = additional arguments to pass to prettyGGplotTheme()
   #
   # outputs: a ggplot object
   # 
@@ -1153,7 +1153,7 @@ plotCorHeatmap <- function(X, cor.type = "pearson",
   # - manual.fill = "temperature" or vector of colors for the color scale
   #     (optional)
   # - show.plot = logical; whether or not to print plot
-  # - ... = additional arguments to pass to myGGplotTheme()
+  # - ... = additional arguments to pass to prettyGGplotTheme()
   #
   # outputs: a ggplot object
   # 

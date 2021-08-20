@@ -52,7 +52,7 @@ plotBarplot <- function(data, x.str, y.str = NULL,
     plt <- plt +
       geom_bar(position = position, stat = stat, color = "grey98",
                fill = fill, ...) +
-      myGGplotTheme()
+      prettyGGplotTheme()
   } else {
     if (is.null(y.str)) {
       data <- data %>%
@@ -69,8 +69,8 @@ plotBarplot <- function(data, x.str, y.str = NULL,
     }
     plt <- plt + 
       geom_bar(position = position, stat = stat, color = "grey98", ...) +
-      myGGplotTheme() +
-      myGGplotFill(fill = data$fill)
+      prettyGGplotTheme() +
+      prettyGGplotFill(fill = data$fill)
   }
   
   if (show.plot) {
@@ -124,7 +124,7 @@ plotBoxplot <- function(data, x.str = NULL, y.str = NULL, fill.str = NULL,
         aes(x = "", y = x) +
         labs(y = x.str, x = "") +
         geom_boxplot(...) +
-        myGGplotTheme()
+        prettyGGplotTheme()
     } else {
       data <- data %>%
         rename(x = x.str, y = y.str)
@@ -132,7 +132,7 @@ plotBoxplot <- function(data, x.str = NULL, y.str = NULL, fill.str = NULL,
         aes(x = y, y = x, group = y) +
         labs(y = x.str, x = y.str) +
         geom_boxplot(...) +
-        myGGplotTheme()
+        prettyGGplotTheme()
     }
     
   } else {
@@ -151,8 +151,8 @@ plotBoxplot <- function(data, x.str = NULL, y.str = NULL, fill.str = NULL,
         aes(x = "", y = x, fill = fill) +
         labs(y = x.str, x = "", fill = fill.str) +
         geom_boxplot(...) +
-        myGGplotTheme() +
-        myGGplotFill(fill = data$fill)
+        prettyGGplotTheme() +
+        prettyGGplotFill(fill = data$fill)
     } else {
       data <- data %>%
         rename(x = x.str, y = y.str, fill = fill.str)
@@ -160,8 +160,8 @@ plotBoxplot <- function(data, x.str = NULL, y.str = NULL, fill.str = NULL,
         aes(x = y, y = x, fill = fill, group = interaction(y, fill)) +
         labs(y = x.str, x = y.str, fill = fill.str) +
         geom_boxplot(...) +
-        myGGplotTheme() + 
-        myGGplotFill(fill = data$fill)
+        prettyGGplotTheme() + 
+        prettyGGplotFill(fill = data$fill)
     }
   }
   
@@ -215,7 +215,7 @@ plotDensity <- function(data, x.str = NULL, fill.str = NULL, fill = "#6FBBE3",
       aes(x = x) +
       labs(y = "Density", x = x.str) +
       geom_density(fill = fill, alpha = alpha, color = "black", ...) +
-      myGGplotTheme()
+      prettyGGplotTheme()
   } else {
     if (is.null(x.str)) { # plot all data if x.str is not provided
       x.str <- "data"
@@ -229,8 +229,8 @@ plotDensity <- function(data, x.str = NULL, fill.str = NULL, fill = "#6FBBE3",
       aes(x = x, fill = fill) +
       labs(y = "Density", x = x.str, fill = fill.str) +
       geom_density(color = "black", alpha = alpha, ...) +
-      myGGplotTheme() +
-      myGGplotFill(fill = data$fill)
+      prettyGGplotTheme() +
+      prettyGGplotFill(fill = data$fill)
   }
   
   if (show.plot) {
@@ -279,7 +279,7 @@ plotHistogram <- function(data, x.str = NULL, fill.str = NULL, fill = "#6FBBE3",
       aes(x = x) +
       labs(y = "Frequency", x = x.str) +
       geom_histogram(fill = fill, color = "grey98", bins = bins, ...) +
-      myGGplotTheme()
+      prettyGGplotTheme()
   } else {
     if (is.null(x.str)) { # plot all data if x.str is not provided
       x.str <- "data"
@@ -293,8 +293,8 @@ plotHistogram <- function(data, x.str = NULL, fill.str = NULL, fill = "#6FBBE3",
       aes(x = x, fill = fill) +
       labs(y = "Frequency", x = x.str, fill = fill.str) +
       geom_histogram(color = "grey98", bins = bins, ...) +
-      myGGplotTheme() +
-      myGGplotFill(fill = data$fill)
+      prettyGGplotTheme() +
+      prettyGGplotFill(fill = data$fill)
   }
   
   if (show.plot) {
@@ -339,7 +339,7 @@ plotLine <- function(data, x.str, y.str, color.str = NULL, show.plot = F, ...) {
       aes(x = x, y = y) +
       labs(y = y.str, x = x.str) +
       geom_line(...) + 
-      myGGplotTheme()
+      prettyGGplotTheme()
     
   } else {
     data <- data %>%
@@ -349,8 +349,8 @@ plotLine <- function(data, x.str, y.str, color.str = NULL, show.plot = F, ...) {
       aes(x = x, y = y, color = color, group = color) +
       labs(y = y.str, x = x.str, color = color.str) +
       geom_line(...) +
-      myGGplotTheme() +
-      myGGplotColor(color = data$color)
+      prettyGGplotTheme() +
+      prettyGGplotColor(color = data$color)
   }
   
   if (show.plot) {
@@ -394,7 +394,7 @@ plotScatter <- function(data, x.str, y.str, color.str = NULL,
       aes(x = x, y = y) +
       labs(y = y.str, x = x.str) +
       geom_point(...) + 
-      myGGplotTheme()
+      prettyGGplotTheme()
     
   } else {
     data <- data %>%
@@ -404,8 +404,8 @@ plotScatter <- function(data, x.str, y.str, color.str = NULL,
       aes(x = x, y = y, color = color) +
       labs(y = y.str, x = x.str, color = color.str) +
       geom_point(...) +
-      myGGplotTheme() +
-      myGGplotColor(color = data$color)
+      prettyGGplotTheme() +
+      prettyGGplotColor(color = data$color)
   }
   
   if (show.plot) {

@@ -5,18 +5,18 @@ library(viridis)
 library(RColorBrewer)
 library(stringr)
 
-myGGplotTheme <- function(font = "Helvetica",
-                          background_color = "grey98",
-                          strip_background_color = "#2c3e50",
-                          grid_color = "grey90",
-                          axis_line_width = 1,
-                          show_ticks = TRUE,
-                          x_text_angle = FALSE,
-                          size_theme = NULL,
-                          axis_title_size = 10, axis_text_size = 7,
-                          legend_title_size = 10, legend_text_size = 8,
-                          strip_text_size = 9, title_size = 12, 
-                          ...) {
+prettyGGplotTheme <- function(font = "Helvetica",
+                              background_color = "grey98",
+                              strip_background_color = "#2c3e50",
+                              grid_color = "grey90",
+                              axis_line_width = 1,
+                              show_ticks = TRUE,
+                              x_text_angle = FALSE,
+                              size_theme = NULL,
+                              axis_title_size = 10, axis_text_size = 7,
+                              legend_title_size = 10, legend_text_size = 8,
+                              strip_text_size = 9, title_size = 12, 
+                              ...) {
   ####### Function Description ########
   # customized ggplot theme
   # 
@@ -47,7 +47,7 @@ myGGplotTheme <- function(font = "Helvetica",
   #
   # example usage:
   # ggplot(iris) + aes(x = Sepal.Length, y = Sepal.Width) +
-  #   geom_point() + myGGplotTheme()
+  #   geom_point() + prettyGGplotTheme()
   ####### 
   
   if (!is.null(size_theme)) {
@@ -109,7 +109,7 @@ myGGplotTheme <- function(font = "Helvetica",
   return(my_theme)
 }
 
-myGGplotMapTheme <- function(...) {
+prettyGGplotMapTheme <- function(...) {
   ####### Function Description ########
   # customized ggplot theme for maps
   # 
@@ -125,8 +125,8 @@ myGGplotMapTheme <- function(...) {
 }
 
 
-myGGplotColor <- function(color, viridis = F, option = "plasma", 
-                          drop = T, ...) {
+prettyGGplotColor <- function(color, viridis = F, option = "plasma", 
+                              drop = T, ...) {
   ####### Function Description ########
   # customized ggplot color scheme
   # 
@@ -144,7 +144,7 @@ myGGplotColor <- function(color, viridis = F, option = "plasma",
   #
   # example usage:
   # ggplot(iris) + aes(x = Sepal.Length, y = Sepal.Width, color = Species) +
-  #   geom_point() + myGGplotTheme() + myGGplotColor(color = iris$Species)
+  #   geom_point() + prettyGGplotTheme() + prettyGGplotColor(color = iris$Species)
   #######
   
   discrete <- is.factor(color)
@@ -173,8 +173,8 @@ myGGplotColor <- function(color, viridis = F, option = "plasma",
 }
 
 
-myGGplotFill <- function(fill, viridis = F, option = "plasma", 
-                         drop = T, ...) {
+prettyGGplotFill <- function(fill, viridis = F, option = "plasma", 
+                             drop = T, ...) {
   ####### Function Description ########
   # customized ggplot fill scheme
   # 
@@ -192,7 +192,7 @@ myGGplotFill <- function(fill, viridis = F, option = "plasma",
   #
   # example usage:
   # ggplot(iris) + aes(x = Sepal.Length, fill = Species) +
-  #   geom_density() + myGGplotTheme() + myGGplotFill(fill = iris$Species)
+  #   geom_density() + prettyGGplotTheme() + prettyGGplotFill(fill = iris$Species)
   #######
   
   discrete <- is.factor(fill)
