@@ -1059,10 +1059,14 @@ plotHclustHeatmap <- function(X,
       order_x <- c()
       for (group in unique(x.groups)) {
         group.idx <- x.groups == group
-        Dmat.x.sub <- as.dist(as.matrix(Dmat.x)[group.idx, group.idx])
-        hclust_out_x <- hclust(Dmat.x.sub, method = linkage.x)
-        col_idx <- data.frame(idx = 1:sum(group.idx), col = which(group.idx))
-        order_x <- c(order_x, col_idx$col[match(hclust_out_x$order, col_idx$idx)])
+        if (sum(group.idx) > 1) {
+          Dmat.x.sub <- as.dist(as.matrix(Dmat.x)[group.idx, group.idx])
+          hclust_out_x <- hclust(Dmat.x.sub, method = linkage.x)
+          col_idx <- data.frame(idx = 1:sum(group.idx), col = which(group.idx))
+          order_x <- c(order_x, col_idx$col[match(hclust_out_x$order, col_idx$idx)])
+        } else {
+          order_x <- c(order_x, which(group.idx))
+        }
       }
       x.groups <- x.groups[order_x]
     }
@@ -1095,10 +1099,14 @@ plotHclustHeatmap <- function(X,
       order_y <- c()
       for (group in unique(y.groups)) {
         group.idx <- y.groups == group
-        Dmat.y.sub <- as.dist(as.matrix(Dmat.y)[group.idx, group.idx])
-        hclust_out_y <- hclust(Dmat.y.sub, method = linkage.y)
-        col_idx <- data.frame(idx = 1:sum(group.idx), col = which(group.idx))
-        order_y <- c(order_y, col_idx$col[match(hclust_out_y$order, col_idx$idx)])
+        if (sum(group.idx) > 1) {
+          Dmat.y.sub <- as.dist(as.matrix(Dmat.y)[group.idx, group.idx])
+          hclust_out_y <- hclust(Dmat.y.sub, method = linkage.y)
+          col_idx <- data.frame(idx = 1:sum(group.idx), col = which(group.idx))
+          order_y <- c(order_y, col_idx$col[match(hclust_out_y$order, col_idx$idx)])
+        } else {
+          order_y <- c(order_y, which(group.idx))
+        }
       }
       y.groups <- y.groups[order_y]
     }
