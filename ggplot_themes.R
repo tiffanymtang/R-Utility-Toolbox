@@ -219,3 +219,27 @@ prettyGGplotFill <- function(fill, viridis = F, option = "plasma",
   
   return(my_fill)
 }
+
+blank_x_theme <- function() {
+  theme(axis.line.x = element_blank(),
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(), 
+        axis.ticks.x = element_blank(),
+        panel.grid.major.x = element_blank())
+}
+
+blank_y_theme <- function() {
+  theme(axis.line.y = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank(), 
+        axis.ticks.y = element_blank(),
+        panel.grid.major.y = element_blank())
+}
+
+blank_xy_theme <- function() {
+  theme(axis.line = element_blank(),
+        axis.title = element_blank(),
+        axis.text = element_blank(), 
+        axis.ticks = element_blank(),
+        panel.grid.major = element_blank())
+}
