@@ -201,6 +201,7 @@ evalAUC <- function(y, yhat, metric = "roc") {
   # - metric = "roc" or "pr"
   ######
   
+  metric <- match.arg(metric)
   if (all(yhat == yhat[1])) {
     warning("Predictions are all the same.")
     out <- NULL
